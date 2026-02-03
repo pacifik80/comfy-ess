@@ -16,7 +16,7 @@ function ensureStyles() {
   border-radius: 6px;
   overflow: hidden;
 }
-.ess-template-editor .ess-template-highlight,
+.ess-template-editor .ess-template-highlight-content,
 .ess-template-editor textarea {
   font-family: "JetBrains Mono", "Fira Code", "Consolas", monospace;
   font-size: 12px;
@@ -30,9 +30,12 @@ function ensureStyles() {
   position: absolute;
   inset: 0;
   color: #c9d1d9;
+  overflow: hidden;
+}
+.ess-template-editor .ess-template-highlight-content {
   white-space: pre-wrap;
-  word-break: break-word;
   pointer-events: none;
+  will-change: transform;
 }
 .ess-template-editor textarea {
   position: relative;
@@ -47,16 +50,46 @@ function ensureStyles() {
 .ess-template-editor textarea::placeholder {
   color: #7d8590;
 }
-.ess-template-editor .ess-tpl-symbol {
-  color: #79c0ff;
-  font-weight: 600;
+.ess-template-editor .ess-tpl-choice {
+  color: #2f6f3e;
 }
-.ess-template-editor .ess-tpl-scope {
-  background: rgba(121, 192, 255, 0.18);
-  border-radius: 3px;
+.ess-template-editor .ess-tpl-choice-active {
+  color: #7ee787;
+  font-weight: 700;
 }
-.ess-template-editor .ess-tpl-scope.ess-tpl-symbol {
-  color: #d2a8ff;
+.ess-template-editor .ess-tpl-header {
+  color: #b48800;
+}
+.ess-template-editor .ess-tpl-header-active {
+  color: #f9e076;
+  font-weight: 700;
+}
+.ess-template-editor .ess-tpl-header-name {
+  color: #8b5a2b;
+}
+.ess-template-editor .ess-tpl-header-name-active {
+  color: #d2a064;
+  font-weight: 700;
+}
+.ess-template-editor .ess-tpl-header-number {
+  color: #d16ba5;
+}
+.ess-template-editor .ess-tpl-header-number-active {
+  color: #ff9ad5;
+  font-weight: 700;
+}
+.ess-template-editor .ess-tpl-negative-marker {
+  color: #a43f3f;
+}
+.ess-template-editor .ess-tpl-negative-marker-active {
+  color: #ff7b72;
+  font-weight: 700;
+}
+.ess-template-editor .ess-tpl-negative-text {
+  color: #a43f3f;
+}
+.ess-template-editor .ess-tpl-comment {
+  color: #6e7681;
 }
 `;
   if (existing) {
@@ -161,23 +194,180 @@ function renderHighlight(text, caret) {
   const { pairs, reverse } = buildPairs(text);
   const activeScope = findActiveScope(text, caret, pairs, reverse);
   const activeSet = activeScope ? collectScopeTokens(text, activeScope.open, activeScope.close) : new Set();
+  const activeRange = activeScope ? { start: activeScope.open, end: activeScope.close } : null;
 
-  let html = "";
-  for (let i = 0; i < text.length; i += 1) {
+  const length = text.length;
+  const classSets = Array.from({ length }, () => new Set());
+  const isComment = new Array(length).fill(false);
+  const isSpecial = new Array(length).fill(false);
+  const headerTypes = new Array(length).fill(null);
+
+  const markClass = (index, className) => {
+    if (index < 0 || index >= length) {
+      return;
+    }
+    classSets[index].add(className);
+    isSpecial[index] = true;
+  };
+
+  // Mark comment ranges: start with #, terminate on newline or special symbols or another #
+  let inComment = false;
+  for (let i = 0; i < length; i += 1) {
     const ch = text[i];
-    const escaped = escapeHtml(ch);
-    const isSymbol = ch === "{" || ch === "}" || ch === "|";
-    const isActive = activeSet.has(i);
-    if (!isSymbol && !isActive) {
-      html += escaped;
+    if (inComment) {
+      if (ch === "#") {
+        isComment[i] = true;
+        inComment = false;
+        continue;
+      }
+      if (ch === "\n" || ch === "{" || ch === "}" || ch === "|" || ch === "[" || ch === "]" || ch === ":") {
+        inComment = false;
+        continue;
+      }
+      isComment[i] = true;
       continue;
     }
-    const classes = [];
-    if (isSymbol) {
-      classes.push("ess-tpl-symbol");
+    if (ch === "#") {
+      isComment[i] = true;
+      inComment = true;
     }
-    if (isActive) {
-      classes.push("ess-tpl-scope");
+  }
+
+  // Identify header name/number spans for coloring
+  for (let i = 0; i < length; i += 1) {
+    const ch = text[i];
+    if (ch !== "[") {
+      continue;
+    }
+    const close = text.indexOf("]", i + 1);
+    if (close === -1) {
+      break;
+    }
+    const headerContent = text.slice(i + 1, close);
+    const colonIndex = headerContent.indexOf(":");
+    if (colonIndex >= 0) {
+      const nameStart = i + 1;
+      const nameEnd = i + 1 + colonIndex;
+      const numStart = nameEnd + 1;
+      const numEnd = close;
+      for (let j = nameStart; j < nameEnd; j += 1) {
+        headerTypes[j] = "name";
+      }
+      for (let j = numStart; j < numEnd; j += 1) {
+        headerTypes[j] = "number";
+      }
+    } else {
+      const isNumber = /^\s*\d+(?:\.\d+)?\s*$/.test(headerContent);
+      const type = isNumber ? "number" : "name";
+      for (let j = i + 1; j < close; j += 1) {
+        headerTypes[j] = type;
+      }
+    }
+    i = close;
+  }
+
+  const stack = [];
+  let negativeDepthCount = 0;
+  let bracketDepth = 0;
+
+  for (let i = 0; i < length; i += 1) {
+    if (isComment[i]) {
+      continue;
+    }
+
+    const ch = text[i];
+    const next = text[i + 1];
+    const inActiveRange = activeRange ? i >= activeRange.start && i <= activeRange.end : false;
+
+    if (ch === "!" && next === ">") {
+      const markerClass = inActiveRange ? "ess-tpl-negative-marker-active" : "ess-tpl-negative-marker";
+      markClass(i, markerClass);
+      markClass(i + 1, markerClass);
+      if (stack.length > 0) {
+        const frame = stack[stack.length - 1];
+        if (!frame.negative) {
+          frame.negative = true;
+          negativeDepthCount += 1;
+        }
+      }
+      i += 1;
+      continue;
+    }
+
+    if (ch === "{") {
+      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
+      markClass(i, choiceClass);
+      stack.push({ negative: false });
+      continue;
+    }
+    if (ch === "}") {
+      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
+      markClass(i, choiceClass);
+      const frame = stack.pop();
+      if (frame?.negative) {
+        negativeDepthCount -= 1;
+      }
+      continue;
+    }
+    if (ch === "|") {
+      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
+      markClass(i, choiceClass);
+      if (stack.length > 0) {
+        const frame = stack[stack.length - 1];
+        if (frame.negative) {
+          frame.negative = false;
+          negativeDepthCount -= 1;
+        }
+      }
+      continue;
+    }
+    if (ch === "[") {
+      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
+      markClass(i, headerClass);
+      bracketDepth += 1;
+      continue;
+    }
+    if (ch === "]") {
+      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
+      markClass(i, headerClass);
+      if (bracketDepth > 0) {
+        bracketDepth -= 1;
+      }
+      continue;
+    }
+    if (ch === ":" && bracketDepth > 0) {
+      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
+      markClass(i, headerClass);
+      continue;
+    }
+
+    const headerType = headerTypes[i];
+    if (headerType) {
+      const headerClass = inActiveRange
+        ? (headerType === "number" ? "ess-tpl-header-number-active" : "ess-tpl-header-name-active")
+        : (headerType === "number" ? "ess-tpl-header-number" : "ess-tpl-header-name");
+      classSets[i].add(headerClass);
+      isSpecial[i] = true;
+    }
+
+    if (negativeDepthCount > 0 && !isSpecial[i]) {
+      classSets[i].add("ess-tpl-negative-text");
+    }
+  }
+
+  let html = "";
+  for (let i = 0; i < length; i += 1) {
+    const ch = text[i];
+    const escaped = escapeHtml(ch);
+    let classes;
+    if (isComment[i]) {
+      classes = ["ess-tpl-comment"];
+    } else {
+      classes = Array.from(classSets[i]);
+    }
+    if (!classes.length) {
+      html += escaped;
+      continue;
     }
     html += `<span class="${classes.join(" ")}">${escaped}</span>`;
   }
@@ -198,9 +388,13 @@ function createEditorElements(config, inputData) {
 
   const highlight = document.createElement("div");
   highlight.className = "ess-template-highlight";
+  const highlightContent = document.createElement("div");
+  highlightContent.className = "ess-template-highlight-content";
+  highlight.appendChild(highlightContent);
 
   const textarea = document.createElement("textarea");
   textarea.spellcheck = false;
+  textarea.setAttribute("data-capture-wheel", "true");
   const initialValue = (!Array.isArray(inputData) && inputData && inputData.value != null)
     ? inputData.value
     : (config.value ?? config.default ?? "");
@@ -209,9 +403,17 @@ function createEditorElements(config, inputData) {
     textarea.placeholder = config.placeholder;
   }
 
+  const syncSize = () => {
+    const width = textarea.clientWidth || 0;
+    const height = textarea.clientHeight || 0;
+    highlightContent.style.width = `${width}px`;
+    highlightContent.style.height = `${height}px`;
+  };
+
   const syncScroll = () => {
-    highlight.scrollTop = textarea.scrollTop;
-    highlight.scrollLeft = textarea.scrollLeft;
+    const offsetX = textarea.scrollLeft || 0;
+    const offsetY = textarea.scrollTop || 0;
+    highlightContent.style.transform = `translate(${-offsetX}px, ${-offsetY}px)`;
   };
 
   let raf = 0;
@@ -221,8 +423,9 @@ function createEditorElements(config, inputData) {
     }
     raf = requestAnimationFrame(() => {
       raf = 0;
+      syncSize();
       const caret = textarea.selectionStart || 0;
-      highlight.innerHTML = renderHighlight(textarea.value || "", caret);
+      highlightContent.innerHTML = renderHighlight(textarea.value || "", caret);
       syncScroll();
     });
   };
@@ -233,12 +436,48 @@ function createEditorElements(config, inputData) {
   textarea.addEventListener("select", scheduleRender);
   textarea.addEventListener("focus", scheduleRender);
   textarea.addEventListener("scroll", syncScroll);
+  textarea.addEventListener("pointerdown", (event) => event.stopPropagation());
+  textarea.addEventListener("pointermove", (event) => event.stopPropagation());
+  textarea.addEventListener("pointerup", (event) => event.stopPropagation());
+  textarea.addEventListener("contextmenu", (event) => event.stopPropagation());
 
   container.appendChild(highlight);
   container.appendChild(textarea);
   scheduleRender();
 
-  return { container, textarea, scheduleRender };
+  const resizeObserver = new ResizeObserver(() => {
+    syncSize();
+    syncScroll();
+  });
+  resizeObserver.observe(textarea);
+
+  const onWheelCapture = (event) => {
+    if (!container.isConnected) {
+      return;
+    }
+    if (!container.contains(event.target)) {
+      return;
+    }
+    const deltaX = event.deltaX || 0;
+    const deltaY = event.deltaY || 0;
+    if (event.shiftKey && Math.abs(deltaY) > Math.abs(deltaX)) {
+      textarea.scrollLeft += deltaY;
+    } else {
+      textarea.scrollTop += deltaY;
+      textarea.scrollLeft += deltaX;
+    }
+    syncScroll();
+    event.preventDefault();
+    event.stopPropagation();
+  };
+
+  window.addEventListener("wheel", onWheelCapture, { capture: true, passive: false });
+
+  const cleanup = () => {
+    resizeObserver.disconnect();
+  };
+
+  return { container, textarea, scheduleRender, onWheelCapture, cleanup };
 }
 
 app.registerExtension({
@@ -253,7 +492,7 @@ app.registerExtension({
         const rawMaxHeight = Number(config.maxHeight);
         const maxHeight = Number.isFinite(rawMaxHeight) ? Math.max(minHeight, rawMaxHeight) : 100000;
 
-        const { container, textarea, scheduleRender } = createEditorElements(config, inputData);
+        const { container, textarea, scheduleRender, onWheelCapture, cleanup } = createEditorElements(config, inputData);
         applyContainerVars(container, minHeight, maxHeight);
 
         if (typeof node.addDOMWidget === "function") {
@@ -272,6 +511,8 @@ app.registerExtension({
           const originalRemove = widget.onRemove?.bind(widget);
           widget.onRemove = function () {
             originalRemove?.();
+            window.removeEventListener("wheel", onWheelCapture, { capture: true });
+            cleanup?.();
             if (container.isConnected) {
               container.remove();
             }

@@ -36,9 +36,33 @@ class PromptParser:
         self.block_pattern = re.compile(r'\{((?:[^{}]|{[^{]|{[^{]|{[^{])*)\}', re.DOTALL)
         # Pattern for option header: [name:weight] or [weight] or [name]
         self.header_pattern = re.compile(r'^\[([^:]+)(?::(\d+(?:\.\d+)?))?\]|\[(\d+(?:\.\d+)?)\]')
-        # Pattern for comments
-        self.comment_pattern = re.compile(r'#.*$', re.MULTILINE)
         self._seed = self._normalize_seed(seed)
+
+    @staticmethod
+    def _strip_comments(text: str) -> str:
+        """
+        Remove inline comments started by #.
+        Comments end at newline, any of {}|[]:, or another #.
+        """
+        if not text:
+            return text
+        out = []
+        in_comment = False
+        for ch in text:
+            if in_comment:
+                if ch == "#":
+                    in_comment = False
+                    continue
+                if ch in "\n{}|[]:":
+                    in_comment = False
+                    out.append(ch)
+                    continue
+                continue
+            if ch == "#":
+                in_comment = True
+                continue
+            out.append(ch)
+        return "".join(out)
 
     @staticmethod
     def _normalize_seed(seed: Optional[int]) -> Optional[int]:
@@ -105,8 +129,8 @@ class PromptParser:
         """Parse a block's content into a list of options."""
         options = []
         
-        # Remove comments
-        content = self.comment_pattern.sub('', content)
+        # Remove comments (inline-aware)
+        content = self._strip_comments(content)
         
         # Split by | but preserve nested blocks
         parts = []
@@ -294,6 +318,9 @@ class PromptParser:
                     # Handle both %key% and key formats
                     text = text.replace(f"%{key}%", value)
                     text = text.replace(key, value)
+
+            # Strip inline comments before parsing
+            text = self._strip_comments(text)
             
             # Process blocks
             result, extra_neg = self.process_blocks(text)
