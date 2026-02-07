@@ -5,12 +5,12 @@ class LabelNote:
 
     CATEGORY = "ESS/Utils"
     FUNCTION = "noop"
-    RETURN_TYPES = ("STRING",)
-    RETURN_NAMES = ("label",)
+    RETURN_TYPES = ()
+    RETURN_NAMES = ()
 
     @classmethod
     def INPUT_TYPES(cls):
         return {"required": {}}
 
     def noop(self) -> tuple:
-        return ("",)
+        return tuple()

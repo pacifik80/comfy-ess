@@ -33,6 +33,7 @@ try:
     from .scene_nodes.text_prompt_generator import TextPromptGenerator
     from .scene_nodes.text_prompt_replacer import TextPromptReplacer
     from .scene_nodes.prompt_template_editor import PromptTemplateEditor
+    from .scene_nodes.prompt_template_editor_multi import PromptTemplateEditorMulti
     try:
         from .scene_nodes.person_crop_to_size import PersonCropToSize
     except Exception as exc:
@@ -67,6 +68,7 @@ except ImportError as exc:
     from scene_nodes.text_prompt_generator import TextPromptGenerator
     from scene_nodes.text_prompt_replacer import TextPromptReplacer
     from scene_nodes.prompt_template_editor import PromptTemplateEditor
+    from scene_nodes.prompt_template_editor_multi import PromptTemplateEditorMulti
     try:
         from scene_nodes.person_crop_to_size import PersonCropToSize
     except Exception as exc:
@@ -96,6 +98,7 @@ _BASE_NODE_CLASS_MAPPINGS = {
     "TextPromptGenerator": TextPromptGenerator,
     "TextPromptReplacer": TextPromptReplacer,
     "PromptTemplateEditor": PromptTemplateEditor,
+    "PromptTemplateEditorMulti": PromptTemplateEditorMulti,
 }
 
 _BASE_NODE_DISPLAY_NAME_MAPPINGS = {
@@ -119,6 +122,7 @@ _BASE_NODE_DISPLAY_NAME_MAPPINGS = {
     "TextPromptGenerator": "Text Prompt Generator",
     "TextPromptReplacer": "Text Prompt Replacer",
     "PromptTemplateEditor": "Prompt Template Editor",
+    "PromptTemplateEditorMulti": "Prompt Template Editor - Multioutput",
 }
 
 NODE_CLASS_MAPPINGS = {

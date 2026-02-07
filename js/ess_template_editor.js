@@ -88,6 +88,20 @@ function ensureStyles() {
 .ess-template-editor .ess-tpl-negative-text {
   color: #a43f3f;
 }
+.ess-template-editor .ess-tpl-variant {
+  color: #5b2c83;
+}
+.ess-template-editor .ess-tpl-variant-active {
+  color: #d6a8ff;
+  font-weight: 700;
+}
+.ess-template-editor .ess-tpl-variant-label {
+  color: #6b4fb3;
+}
+.ess-template-editor .ess-tpl-variant-label-active {
+  color: #e0c1ff;
+  font-weight: 700;
+}
 .ess-template-editor .ess-tpl-comment {
   color: #6e7681;
 }
@@ -190,11 +204,168 @@ function collectScopeTokens(text, open, close) {
   return active;
 }
 
+function buildVariantPairs(text) {
+  const pairs = new Map();
+  const reverse = new Map();
+  const stack = [];
+  for (let i = 0; i < text.length - 1; i += 1) {
+    const pair = text.slice(i, i + 2);
+    if (pair === "<<") {
+      stack.push(i);
+      i += 1;
+      continue;
+    }
+    if (pair === ">>") {
+      if (stack.length > 0) {
+        const open = stack.pop();
+        pairs.set(open, i);
+        reverse.set(i, open);
+      }
+      i += 1;
+    }
+  }
+  return { pairs, reverse };
+}
+
+function findActiveVariantScope(text, caret, pairs, reverse) {
+  if (caret >= 2) {
+    const prevPair = text.slice(caret - 2, caret);
+    if (prevPair === "<<" && pairs.has(caret - 2)) {
+      return { open: caret - 2, close: pairs.get(caret - 2) };
+    }
+    if (prevPair === ">>" && reverse.has(caret - 2)) {
+      const open = reverse.get(caret - 2);
+      return { open, close: caret - 2 };
+    }
+  }
+  if (caret < text.length - 1) {
+    const currPair = text.slice(caret, caret + 2);
+    if (currPair === "<<" && pairs.has(caret)) {
+      return { open: caret, close: pairs.get(caret) };
+    }
+    if (currPair === ">>" && reverse.has(caret)) {
+      const open = reverse.get(caret);
+      return { open, close: caret };
+    }
+  }
+
+  const stack = [];
+  for (let i = 0; i < caret - 1; i += 1) {
+    const pair = text.slice(i, i + 2);
+    if (pair === "<<") {
+      stack.push(i);
+      i += 1;
+      continue;
+    }
+    if (pair === ">>" && stack.length > 0) {
+      stack.pop();
+      i += 1;
+      continue;
+    }
+  }
+  if (stack.length === 0) {
+    return null;
+  }
+  const open = stack[stack.length - 1];
+  const close = pairs.get(open);
+  if (close == null) {
+    return null;
+  }
+  return { open, close };
+}
+
+function collectVariantTokens(text, open, close) {
+  const active = new Set();
+  active.add(open);
+  active.add(open + 1);
+  active.add(close);
+  active.add(close + 1);
+  let depth = 0;
+  for (let i = open + 2; i < close; i += 1) {
+    const pair = text.slice(i, i + 2);
+    if (pair === "<<") {
+      depth += 1;
+      i += 1;
+      continue;
+    }
+    if (pair === ">>") {
+      if (depth > 0) {
+        depth -= 1;
+      }
+      i += 1;
+      continue;
+    }
+    if (pair === "||" && depth === 0) {
+      active.add(i);
+      active.add(i + 1);
+      i += 1;
+    }
+  }
+  return active;
+}
+
+function collectVariantLabelIndices(text, pairs) {
+  const labelIndices = new Set();
+  for (const [open, close] of pairs.entries()) {
+    let depth = 0;
+    let i = open + 2;
+    let segmentStart = open + 2;
+
+    const markLabel = (start) => {
+      let j = start;
+      while (j < close && /\s/.test(text[j])) {
+        j += 1;
+      }
+      if (j + 1 < close) {
+        const letter = text[j];
+        const colon = text[j + 1];
+        if (colon === ":" && letter >= "a" && letter <= "j") {
+          labelIndices.add(j);
+          labelIndices.add(j + 1);
+        }
+      }
+    };
+
+    while (i < close) {
+      const pair = text.slice(i, i + 2);
+      if (pair === "<<") {
+        depth += 1;
+        i += 2;
+        continue;
+      }
+      if (pair === ">>") {
+        if (depth > 0) {
+          depth -= 1;
+        }
+        i += 2;
+        continue;
+      }
+      if (pair === "||" && depth === 0) {
+        markLabel(segmentStart);
+        segmentStart = i + 2;
+        i += 2;
+        continue;
+      }
+      i += 1;
+    }
+    markLabel(segmentStart);
+  }
+  return labelIndices;
+}
+
 function renderHighlight(text, caret) {
   const { pairs, reverse } = buildPairs(text);
   const activeScope = findActiveScope(text, caret, pairs, reverse);
   const activeSet = activeScope ? collectScopeTokens(text, activeScope.open, activeScope.close) : new Set();
   const activeRange = activeScope ? { start: activeScope.open, end: activeScope.close } : null;
+
+  const { pairs: variantPairs, reverse: variantReverse } = buildVariantPairs(text);
+  const variantScope = findActiveVariantScope(text, caret, variantPairs, variantReverse);
+  const variantActiveSet = variantScope ? collectVariantTokens(text, variantScope.open, variantScope.close) : new Set();
+  const variantActiveRange = variantScope
+    ? { start: variantScope.open, end: variantScope.close + 1 }
+    : null;
+  const variantLabelIndices = collectVariantLabelIndices(text, variantPairs);
 
   const length = text.length;
   const classSets = Array.from({ length }, () => new Set());
@@ -220,7 +391,7 @@ function renderHighlight(text, caret) {
         inComment = false;
         continue;
       }
-      if (ch === "\n" || ch === "{" || ch === "}" || ch === "|" || ch === "[" || ch === "]" || ch === ":") {
+      if (ch === "\n" || ch === "{" || ch === "}" || ch === "|" || ch === "[" || ch === "]" || ch === ":" || ch === "<" || ch === ">") {
         inComment = false;
         continue;
       }
@@ -269,6 +440,8 @@ function renderHighlight(text, caret) {
   const stack = [];
   let negativeDepthCount = 0;
   let bracketDepth = 0;
+  let variantDepth = 0;
+  const variantNegativeStack = [];
 
   for (let i = 0; i < length; i += 1) {
     if (isComment[i]) {
@@ -278,17 +451,57 @@ function renderHighlight(text, caret) {
     const ch = text[i];
     const next = text[i + 1];
     const inActiveRange = activeRange ? i >= activeRange.start && i <= activeRange.end : false;
+    const inVariantActiveRange = variantActiveRange
+      ? i >= variantActiveRange.start && i <= variantActiveRange.end
+      : false;
+
+    if (ch === "<" && next === "<") {
+      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
+      markClass(i, variantClass);
+      markClass(i + 1, variantClass);
+      variantDepth += 1;
+      variantNegativeStack.push(false);
+      i += 1;
+      continue;
+    }
+    if (ch === ">" && next === ">") {
+      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
+      markClass(i, variantClass);
+      markClass(i + 1, variantClass);
+      if (variantDepth > 0) {
+        variantDepth -= 1;
+      }
+      if (variantNegativeStack.length > 0) {
+        variantNegativeStack.pop();
+      }
+      i += 1;
+      continue;
+    }
+    if (ch === "|" && next === "|" && variantDepth > 0) {
+      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
+      markClass(i, variantClass);
+      markClass(i + 1, variantClass);
+      if (variantNegativeStack.length > 0) {
+        variantNegativeStack[variantNegativeStack.length - 1] = false;
+      }
+      i += 1;
+      continue;
+    }
 
     if (ch === "!" && next === ">") {
-      const markerClass = inActiveRange ? "ess-tpl-negative-marker-active" : "ess-tpl-negative-marker";
+      const markerActive = inActiveRange || inVariantActiveRange;
+      const markerClass = markerActive ? "ess-tpl-negative-marker-active" : "ess-tpl-negative-marker";
       markClass(i, markerClass);
       markClass(i + 1, markerClass);
-      if (stack.length > 0) {
+      if (variantDepth === 0 && stack.length > 0) {
         const frame = stack[stack.length - 1];
         if (!frame.negative) {
           frame.negative = true;
           negativeDepthCount += 1;
         }
+      }
+      if (variantDepth > 0 && variantNegativeStack.length > 0) {
+        variantNegativeStack[variantNegativeStack.length - 1] = true;
       }
       i += 1;
       continue;
@@ -350,7 +563,15 @@ function renderHighlight(text, caret) {
       isSpecial[i] = true;
     }
 
-    if (negativeDepthCount > 0 && !isSpecial[i]) {
+    if (variantLabelIndices.has(i)) {
+      const labelClass = inVariantActiveRange ? "ess-tpl-variant-label-active" : "ess-tpl-variant-label";
+      classSets[i].add(labelClass);
+      isSpecial[i] = true;
+    }
+
+    const variantNegativeActive = variantNegativeStack.length > 0
+      && variantNegativeStack[variantNegativeStack.length - 1];
+    if ((negativeDepthCount > 0 || variantNegativeActive) && !isSpecial[i]) {
       classSets[i].add("ess-tpl-negative-text");
     }
   }

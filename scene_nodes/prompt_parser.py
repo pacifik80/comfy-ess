@@ -1,4 +1,5 @@
 import re
+import logging
 from typing import List, Tuple, Dict, Optional, Union
 from dataclasses import dataclass
 import random
@@ -37,12 +38,14 @@ class PromptParser:
         # Pattern for option header: [name:weight] or [weight] or [name]
         self.header_pattern = re.compile(r'^\[([^:]+)(?::(\d+(?:\.\d+)?))?\]|\[(\d+(?:\.\d+)?)\]')
         self._seed = self._normalize_seed(seed)
+        self._logger = logging.getLogger(__name__)
+        self._variant_letters = "abcdefghij"
 
     @staticmethod
     def _strip_comments(text: str) -> str:
         """
         Remove inline comments started by #.
-        Comments end at newline, any of {}|[]:, or another #.
+        Comments end at newline, any of {}|[]:<> or another #.
         """
         if not text:
             return text
@@ -53,7 +56,7 @@ class PromptParser:
                 if ch == "#":
                     in_comment = False
                     continue
-                if ch in "\n{}|[]:":
+                if ch in "\n{}|[]:<>":
                     in_comment = False
                     out.append(ch)
                     continue
@@ -77,13 +80,244 @@ class PromptParser:
         return value
 
     def split_prompt(self, text: str) -> Tuple[str, str]:
-        """Split text into positive and negative parts based on !> separator."""
-        match = re.search(r"\s*!>\s*", text)
-        if match:
-            pos = text[:match.start()].rstrip()
-            neg = text[match.end():].lstrip()
-            return pos, neg
+        """Split text into positive and negative parts based on !> separator.
+        Ignore separators that occur inside << >> variant blocks.
+        """
+        if not text:
+            return "", ""
+        i = 0
+        variant_depth = 0
+        while i < len(text) - 1:
+            pair = text[i:i+2]
+            if pair == "<<":
+                variant_depth += 1
+                i += 2
+                continue
+            if pair == ">>":
+                if variant_depth > 0:
+                    variant_depth -= 1
+                i += 2
+                continue
+            if pair == "!>" and variant_depth == 0:
+                pos = text[:i].rstrip()
+                neg = text[i+2:].lstrip()
+                return pos, neg
+            i += 1
         return text.strip(), ""
+
+    def _cleanup_lines(self, text: str) -> str:
+        lines = []
+        for line in text.split("\n"):
+            line = line.strip()
+            if line and line != ".":
+                lines.append(line)
+        return "\n".join(lines)
+
+    def _parse_base(self, text: str) -> Tuple[str, str]:
+        """Parse text into a resolved template and extra negative content."""
+        # Apply replacements from global state if available
+        replacements = GlobalState.get_replacements()
+        if replacements:
+            for key, value in replacements.items():
+                text = text.replace(f"%{key}%", value)
+                text = text.replace(key, value)
+
+        # Strip inline comments before parsing
+        text = self._strip_comments(text)
+
+        # Process blocks
+        result, extra_neg = self.process_blocks(text)
+
+        # Clean up any remaining block markers
+        result = self.block_pattern.sub('', result)
+
+        # Clean up any empty lines and single-character lines
+        result = self._cleanup_lines(result)
+
+        return result.strip(), extra_neg.strip()
+
+    def _find_matching_variant_close(self, text: str, start: int) -> int:
+        depth = 1
+        i = start
+        while i < len(text) - 1:
+            pair = text[i:i+2]
+            if pair == "<<":
+                depth += 1
+                i += 2
+                continue
+            if pair == ">>":
+                depth -= 1
+                if depth == 0:
+                    return i
+                i += 2
+                continue
+            i += 1
+        return -1
+
+    def _split_variant_segments(self, content: str) -> List[str]:
+        segments = []
+        current = []
+        angle_depth = 0
+        brace_depth = 0
+        bracket_depth = 0
+        i = 0
+        while i < len(content):
+            pair = content[i:i+2]
+            if pair == "<<":
+                angle_depth += 1
+                current.append(pair)
+                i += 2
+                continue
+            if pair == ">>":
+                if angle_depth > 0:
+                    angle_depth -= 1
+                current.append(pair)
+                i += 2
+                continue
+            if content[i] == "{":
+                brace_depth += 1
+            elif content[i] == "}":
+                brace_depth = max(0, brace_depth - 1)
+            elif content[i] == "[":
+                bracket_depth += 1
+            elif content[i] == "]":
+                bracket_depth = max(0, bracket_depth - 1)
+
+            if pair == "||" and angle_depth == 0 and brace_depth == 0 and bracket_depth == 0:
+                segments.append("".join(current))
+                current = []
+                i += 2
+                continue
+
+            current.append(content[i])
+            i += 1
+
+        if current:
+            segments.append("".join(current))
+
+        return segments
+
+    def _render_variant_block(self, content: str, variant: str, allowed_variants: List[str]) -> str:
+        pieces = []
+        for segment in self._split_variant_segments(content):
+            raw = segment
+            stripped = raw.lstrip()
+            label = None
+            body = raw
+            if len(stripped) >= 2 and stripped[1] == ":":
+                candidate = stripped[0]
+                if candidate in self._variant_letters:
+                    label = candidate
+                    body = stripped[2:].lstrip()
+                else:
+                    self._logger.warning("Ignoring invalid variant label '%s:' in template block.", candidate)
+                    continue
+
+            if label and label not in allowed_variants:
+                self._logger.warning("Ignoring variant label '%s:' not enabled by output count.", label)
+                continue
+
+            if label is None or label == variant:
+                pieces.append(body)
+
+        combined = "".join(pieces)
+        if "<<" in combined:
+            return self.expand_variant_blocks(combined, variant, allowed_variants)
+        return combined
+
+    def expand_variant_blocks(self, text: str, variant: str, allowed_variants: List[str]) -> str:
+        if not text:
+            return text
+        out = []
+        i = 0
+        while i < len(text):
+            if text[i:i+2] == "<<":
+                end = self._find_matching_variant_close(text, i + 2)
+                if end == -1:
+                    out.append(text[i])
+                    i += 1
+                    continue
+                block = text[i+2:end]
+                out.append(self._render_variant_block(block, variant, allowed_variants))
+                i = end + 2
+                continue
+            out.append(text[i])
+            i += 1
+        return "".join(out)
+
+    def parse_multi(self, text: str, variants: List[str]) -> Dict[str, Tuple[str, str]]:
+        """Parse text into multiple variant outputs using << >> blocks."""
+        resolved, extra_neg = self._parse_base(text)
+        allowed = [v for v in variants if v in self._variant_letters]
+        outputs: Dict[str, Tuple[str, str]] = {}
+        for variant in allowed:
+            pos_text, neg_text = self.expand_variant_blocks_with_neg(resolved, variant, allowed)
+            pos_text = self._cleanup_lines(pos_text)
+            neg_text = neg_text.strip()
+            negative = ", ".join([part for part in [extra_neg, neg_text] if part])
+            outputs[variant] = (pos_text.strip(), negative.strip())
+        return outputs
+
+    def expand_variant_blocks_with_neg(self, text: str, variant: str, allowed_variants: List[str]) -> Tuple[str, str]:
+        if not text:
+            return "", ""
+        pos_parts = []
+        neg_parts = []
+        i = 0
+        negative_mode = False
+        while i < len(text):
+            if text[i:i+2] == "<<":
+                end = self._find_matching_variant_close(text, i + 2)
+                if end == -1:
+                    (neg_parts if negative_mode else pos_parts).append(text[i])
+                    i += 1
+                    continue
+                block = text[i+2:end]
+                block_pos, block_neg = self._render_variant_block_with_neg(block, variant, allowed_variants)
+                if negative_mode:
+                    neg_parts.append(block_pos)
+                    neg_parts.append(block_neg)
+                else:
+                    pos_parts.append(block_pos)
+                    neg_parts.append(block_neg)
+                i = end + 2
+                continue
+            if text[i:i+2] == "!>":
+                negative_mode = True
+                i += 2
+                continue
+            target = neg_parts if negative_mode else pos_parts
+            target.append(text[i])
+            i += 1
+        return "".join(pos_parts), "".join(neg_parts)
+
+    def _render_variant_block_with_neg(self, content: str, variant: str, allowed_variants: List[str]) -> Tuple[str, str]:
+        pos_parts = []
+        neg_parts = []
+        for segment in self._split_variant_segments(content):
+            raw = segment
+            stripped = raw.lstrip()
+            label = None
+            body = raw
+            if len(stripped) >= 2 and stripped[1] == ":":
+                candidate = stripped[0]
+                if candidate in self._variant_letters:
+                    label = candidate
+                    body = stripped[2:].lstrip()
+                else:
+                    self._logger.warning("Ignoring invalid variant label '%s:' in template block.", candidate)
+                    continue
+
+            if label and label not in allowed_variants:
+                self._logger.warning("Ignoring variant label '%s:' not enabled by output count.", label)
+                continue
+
+            if label is None or label == variant:
+                seg_pos, seg_neg = self.expand_variant_blocks_with_neg(body, variant, allowed_variants)
+                pos_parts.append(seg_pos)
+                neg_parts.append(seg_neg)
+
+        return "".join(pos_parts), "".join(neg_parts)
 
     def parse_option_header(self, header: str) -> Tuple[str, float]:
         """Parse option header to extract name and weight."""
@@ -132,23 +366,40 @@ class PromptParser:
         # Remove comments (inline-aware)
         content = self._strip_comments(content)
         
-        # Split by | but preserve nested blocks
+        # Split by | but preserve nested blocks and variant blocks (<< >>)
         parts = []
         current_part = []
         bracket_count = 0
+        variant_depth = 0
         
-        for char in content:
+        i = 0
+        while i < len(content):
+            pair = content[i:i+2]
+            if pair == "<<":
+                variant_depth += 1
+                current_part.append(pair)
+                i += 2
+                continue
+            if pair == ">>":
+                if variant_depth > 0:
+                    variant_depth -= 1
+                current_part.append(pair)
+                i += 2
+                continue
+
+            char = content[i]
             if char == '{':
                 bracket_count += 1
                 current_part.append(char)
             elif char == '}':
                 bracket_count -= 1
                 current_part.append(char)
-            elif char == '|' and bracket_count == 0:
+            elif char == '|' and bracket_count == 0 and variant_depth == 0:
                 parts.append(''.join(current_part).strip())
                 current_part = []
             else:
                 current_part.append(char)
+            i += 1
         
         if current_part:
             parts.append(''.join(current_part).strip())
@@ -311,32 +562,7 @@ class PromptParser:
     def parse(self, text: str, is_negative: bool = False) -> Tuple[str, str]:
         """Parse text and return the selected prompt and its inverse."""
         try:
-            # Apply replacements from global state if available
-            replacements = GlobalState.get_replacements()
-            if replacements:
-                for key, value in replacements.items():
-                    # Handle both %key% and key formats
-                    text = text.replace(f"%{key}%", value)
-                    text = text.replace(key, value)
-
-            # Strip inline comments before parsing
-            text = self._strip_comments(text)
-            
-            # Process blocks
-            result, extra_neg = self.process_blocks(text)
-            
-            # Clean up any remaining block markers
-            result = self.block_pattern.sub('', result)
-            
-            # Clean up any empty lines and single-character lines
-            lines = []
-            for line in result.split('\n'):
-                line = line.strip()
-                if line and line != '.':
-                    lines.append(line)
-            
-            result = '\n'.join(lines)
-            
+            result, extra_neg = self._parse_base(text)
             return result.strip(), extra_neg.strip()
         except ParseError:
             raise
