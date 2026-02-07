@@ -1,24 +1,14 @@
 # comfy-ess
 
-Custom ComfyUI nodes for ESS prompt tooling, including scene-based prompt assembly, a template editor with syntax highlighting, and utility image/pose nodes.
+Custom ComfyUI nodes for ESS prompt tooling, including a template editor with syntax highlighting and utility image/pose nodes.
 
 ## Features
 - Prompt template editor with scope-aware highlighting
 - Optional template parsing with deterministic seed
-- Scene composition with embeddings and LoRA stacks
 - Utility nodes for image adjustment, pose generation, and optional face workflows
 
 **Nodes**
 All nodes appear under `ESS/*` categories in the ComfyUI add menu.
-
-**Scene**
-- `ESS - Init Scene`: sets global seed/resolution (and optional replacements dict) and returns a new `SCENE`.
-- `ESS - Define Scene Part`: parses positive/negative templates into a scene element (`quality`, `scene`, `action`, `girl`, `boy`), plus optional embeddings and LoRA.
-- `ESS - Scene Merge`: merges up to 6 `SCENE` inputs into a single `SCENE`.
-- `ESS - Scene Combiner`: merges scenes into final positive/negative prompts, appends embeddings/LoRA tokens, and outputs `LORA_STACK`, width/height, and seed.
-- `ESS - Scene Selector`: weighted random selection among provided scenes; respects hidden inputs and uses global/scene seed for determinism.
-- `ESS - Scene Selector Test`: selector variant supporting up to 10 scenes with `num_scenes` gating.
-- `ESS - Scene Debug`: outputs a human-readable summary of scene elements, embeddings, LoRA stack, and metadata.
 
 **Prompt Builder**
 - `ESS - Prompt Template Editor`: rich template editor; optionally parses with seed and supports prefix/suffix positive/negative inputs.

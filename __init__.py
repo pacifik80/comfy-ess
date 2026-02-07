@@ -9,13 +9,6 @@ PersonCropToSize = None
 _person_crop_error = None
 
 try:
-    from .scene_nodes.scene_selector import SceneSelector
-    from .scene_nodes.scene_selector_test import SceneSelectorTest
-    from .scene_nodes.define_scene_part import DefineScenePart, SceneDebug
-    from .scene_nodes.scene_combiner import SceneCombiner
-    from .scene_nodes.scene import Scene
-    from .scene_nodes.scene_merge import SceneMerge
-    from .scene_nodes.scene_initializer import InitScene
     from .scene_nodes.replacements_dictionary import ReplaceDict
     from .scene_nodes.image_adjustments import ImageAdjustmentsNode
     from .scene_nodes.segmentation_detailer import SegmentationDetailerNode
@@ -44,13 +37,6 @@ except ImportError as exc:
     package_dir = Path(__file__).resolve().parent
     if str(package_dir) not in sys.path:
         sys.path.insert(0, str(package_dir))
-    from scene_nodes.scene_selector import SceneSelector
-    from scene_nodes.scene_selector_test import SceneSelectorTest
-    from scene_nodes.define_scene_part import DefineScenePart, SceneDebug
-    from scene_nodes.scene_combiner import SceneCombiner
-    from scene_nodes.scene import Scene
-    from scene_nodes.scene_merge import SceneMerge
-    from scene_nodes.scene_initializer import InitScene
     from scene_nodes.replacements_dictionary import ReplaceDict
     from scene_nodes.image_adjustments import ImageAdjustmentsNode
     from scene_nodes.segmentation_detailer import SegmentationDetailerNode
@@ -78,13 +64,6 @@ except ImportError as exc:
 _NODE_PREFIX = "ESS/"
 
 _BASE_NODE_CLASS_MAPPINGS = {
-    "SceneSelector": SceneSelector,
-    "SceneSelectorTest": SceneSelectorTest,
-    "DefineScenePart": DefineScenePart,
-    "SceneCombiner": SceneCombiner,
-    "SceneDebug": SceneDebug,
-    "SceneMerge": SceneMerge,
-    "InitScene": InitScene,
     "ReplaceDict": ReplaceDict,
     "ImageAdjustments": ImageAdjustmentsNode,
     "SegmentationDetailer": SegmentationDetailerNode,
@@ -102,13 +81,6 @@ _BASE_NODE_CLASS_MAPPINGS = {
 }
 
 _BASE_NODE_DISPLAY_NAME_MAPPINGS = {
-    "SceneSelector": "Scene Selector",
-    "SceneSelectorTest": "Scene Selector Test",
-    "DefineScenePart": "Define Scene Part",
-    "SceneCombiner": "Scene Combiner",
-    "SceneDebug": "Scene Debug",
-    "SceneMerge": "Scene Merge",
-    "InitScene": "Init Scene",
     "ReplaceDict": "Replace Dict",
     "ImageAdjustments": "Image Adjustments",
     "SegmentationDetailer": "Segmentation Detailer",
@@ -154,16 +126,11 @@ elif _person_crop_error:
 
 # Define categories
 # Processing: ColorField
-# Scene: SceneSelector, DefineScenePart, SceneCombiner, SceneDebug, SceneAppend, InitScene, ReplaceDict
 # Image Processing: ImageAdjustments
 
 
 def get_custom_types():
     return {
-        "SCENE": {
-            "input": Scene,
-            "output": lambda x: isinstance(x, Scene)
-        },
         "SEGMENTATION_MODEL": {
             "input": object,
             "output": lambda x: callable(x) or any(callable(getattr(x, attr, None)) for attr in ("predict_mask", "segment", "predict"))
