@@ -1,5 +1,11 @@
 import sys
+from urllib.parse import unquote
 from pathlib import Path
+
+try:
+    from aiohttp import web
+except Exception:  # pragma: no cover - optional in some test contexts
+    web = None
 
 FaceSwapInSwapperNode = None
 FaceSwapSimSwapNode = None
@@ -20,8 +26,7 @@ try:
         from .scene_nodes.face_swapping import FaceSwapInSwapperNode, FaceSwapSimSwapNode, FaceSwapFaceFusionNode
     except Exception as exc:
         _face_swapper_error = exc
-    from .scene_nodes.pose_figure_editor import PoseFigureEditor
-    from .scene_nodes.pose_resize_with_padding import PoseResizeWithPadding
+    from .scene_nodes.pose_mesh_editor import PoseMeshEditor
     from .scene_nodes.prefix_generator import PrefixGenerator
     from .scene_nodes.text_prompt_generator import TextPromptGenerator
     from .scene_nodes.text_prompt_replacer import TextPromptReplacer
@@ -48,8 +53,7 @@ except ImportError as exc:
         from scene_nodes.face_swapping import FaceSwapInSwapperNode, FaceSwapSimSwapNode, FaceSwapFaceFusionNode
     except Exception as exc:
         _face_swapper_error = exc
-    from scene_nodes.pose_figure_editor import PoseFigureEditor
-    from scene_nodes.pose_resize_with_padding import PoseResizeWithPadding
+    from scene_nodes.pose_mesh_editor import PoseMeshEditor
     from scene_nodes.prefix_generator import PrefixGenerator
     from scene_nodes.text_prompt_generator import TextPromptGenerator
     from scene_nodes.text_prompt_replacer import TextPromptReplacer
@@ -71,8 +75,7 @@ _BASE_NODE_CLASS_MAPPINGS = {
     "GroupReroute": GroupReroute,
     "StringConcatenate": StringConcatenate,
     "LabelNote": LabelNote,
-    "PoseFigureEditor": PoseFigureEditor,
-    "PoseResizeWithPadding": PoseResizeWithPadding,
+    "PoseMeshEditor": PoseMeshEditor,
     "PrefixGenerator": PrefixGenerator,
     "TextPromptGenerator": TextPromptGenerator,
     "TextPromptReplacer": TextPromptReplacer,
@@ -88,8 +91,7 @@ _BASE_NODE_DISPLAY_NAME_MAPPINGS = {
     "GroupReroute": "Group Reroute",
     "StringConcatenate": "String Concatenate",
     "LabelNote": "Label Note",
-    "PoseFigureEditor": "Pose Figure Editor",
-    "PoseResizeWithPadding": "Pose Resize With Padding",
+    "PoseMeshEditor": "Pose Mesh Editor",
     "PrefixGenerator": "Prefix Generator",
     "TextPromptGenerator": "Text Prompt Generator",
     "TextPromptReplacer": "Text Prompt Replacer",
@@ -140,3 +142,52 @@ def get_custom_types():
 
 WEB_DIRECTORY = "./js"
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
+
+
+def _get_rigged_meshes_dir() -> Path:
+    return Path(__file__).resolve().parent / "meshes" / "rigged"
+
+
+def _list_rigged_meshes() -> list[str]:
+    meshes_dir = _get_rigged_meshes_dir()
+    if not meshes_dir.exists():
+        return []
+    allowed = {".fbx", ".obj", ".glb", ".gltf"}
+    return sorted(
+        [
+            p.name
+            for p in meshes_dir.iterdir()
+            if p.is_file() and p.suffix.lower() in allowed
+        ]
+    )
+
+
+if web is not None:
+    try:
+        from server import PromptServer
+
+        @PromptServer.instance.routes.get("/ess/rigged/list")
+        async def ess_rigged_list(_request):
+            return web.json_response({"items": _list_rigged_meshes()})
+
+        @PromptServer.instance.routes.get("/ess/rigged/get")
+        async def ess_rigged_get(request):
+            raw_name = request.rel_url.query.get("name", "")
+            name = unquote(raw_name).strip()
+            if not name:
+                return web.json_response({"error": "missing name"}, status=400)
+
+            meshes_dir = _get_rigged_meshes_dir().resolve()
+            target = (meshes_dir / name).resolve()
+            if not str(target).startswith(str(meshes_dir)):
+                return web.json_response({"error": "invalid name"}, status=400)
+            if not target.exists() or not target.is_file():
+                return web.json_response({"error": "not found"}, status=404)
+
+            return web.Response(
+                body=target.read_bytes(),
+                headers={"X-Mesh-Name": target.name},
+                content_type="application/octet-stream",
+            )
+    except Exception as exc:  # pragma: no cover - route registration is optional
+        print(f"[comfyui-ess] Mesh routes unavailable: {exc}", file=sys.stderr)

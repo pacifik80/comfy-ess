@@ -26,8 +26,7 @@ All nodes appear under `ESS/*` categories in the ComfyUI add menu.
 - `ESS - Face Detailer (ESS)`: Impact Pack face detailer clone; detects a face and refines via masked inpainting.
 
 **Pose**
-- `ESS - Pose Figure Editor`: parametric pose generator; outputs a pose image plus OpenPose JSON.
-- `ESS - Pose Resize With Padding`: aspect-preserving resize to target size with custom padding.
+- `ESS - Pose Mesh Editor`: interactive multi-character rig pose editor with 3 camera slots; outputs 3 OpenPose images.
 
 **Face Swapping**
 - `ESS - Face Swap (InSwapper)`: InsightFace InSwapper ONNX; optional mask blending and GFPGAN restoration.
