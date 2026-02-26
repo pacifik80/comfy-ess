@@ -1,6 +1,7 @@
 from typing import Tuple
 
 from .prompt_parser import PromptParser
+from .replacements_utils import apply_replacements
 
 
 class PromptTemplateEditor:
@@ -50,6 +51,7 @@ class PromptTemplateEditor:
                 "prefix_negative": ("STRING", {"forceInput": True, "multiline": True}),
                 "suffix_positive": ("STRING", {"forceInput": True, "multiline": True}),
                 "suffix_negative": ("STRING", {"forceInput": True, "multiline": True}),
+                "replace_dict": ("DICT", {"forceInput": True}),
             },
         }
 
@@ -62,21 +64,28 @@ class PromptTemplateEditor:
         prefix_negative: str = "",
         suffix_positive: str = "",
         suffix_negative: str = "",
+        replace_dict: dict = None,
     ) -> Tuple[str, str]:
+        template_resolved = apply_replacements(template or "", replace_dict)
+        prefix_positive_resolved = apply_replacements(prefix_positive or "", replace_dict)
+        prefix_negative_resolved = apply_replacements(prefix_negative or "", replace_dict)
+        suffix_positive_resolved = apply_replacements(suffix_positive or "", replace_dict)
+        suffix_negative_resolved = apply_replacements(suffix_negative or "", replace_dict)
+
         if not parse_template:
-            positive_parts = [prefix_positive or "", template or "", suffix_positive or ""]
-            negative_parts = [prefix_negative or "", suffix_negative or ""]
+            positive_parts = [prefix_positive_resolved, template_resolved, suffix_positive_resolved]
+            negative_parts = [prefix_negative_resolved, suffix_negative_resolved]
             positive_raw = "\n".join([p for p in positive_parts if p])
             negative_raw = "\n".join([p for p in negative_parts if p])
             return (positive_raw, negative_raw)
 
         parser = PromptParser(seed=seed)
         try:
-            processed_template, inverse_template = parser.parse(template or "")
-            processed_prefix_pos, inverse_prefix_pos = parser.parse(prefix_positive or "")
-            processed_suffix_pos, inverse_suffix_pos = parser.parse(suffix_positive or "")
-            processed_prefix_neg, inverse_prefix_neg = parser.parse(prefix_negative or "")
-            processed_suffix_neg, inverse_suffix_neg = parser.parse(suffix_negative or "")
+            processed_template, inverse_template = parser.parse(template_resolved)
+            processed_prefix_pos, inverse_prefix_pos = parser.parse(prefix_positive_resolved)
+            processed_suffix_pos, inverse_suffix_pos = parser.parse(suffix_positive_resolved)
+            processed_prefix_neg, inverse_prefix_neg = parser.parse(prefix_negative_resolved)
+            processed_suffix_neg, inverse_suffix_neg = parser.parse(suffix_negative_resolved)
         except Exception as exc:
             raise ValueError(f"Failed to parse template: {exc}") from exc
 

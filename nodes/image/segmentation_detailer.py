@@ -16,7 +16,9 @@ except ImportError:
 try:
     import comfy.samplers as comfy_samplers
     import comfy.model_management as model_management
-    import nodes
+    from ..comfy_nodes_loader import load_comfy_nodes
+
+    nodes = load_comfy_nodes(required_attrs=("NODE_CLASS_MAPPINGS", "common_ksampler"))
 except ImportError:
     comfy_samplers = None
     model_management = None

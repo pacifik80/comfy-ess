@@ -289,7 +289,6 @@ const OPENPOSE_NAMES = [
   "LShoulder",
   "LElbow",
   "LWrist",
-  "MidHip",
   "RHip",
   "RKnee",
   "RAnkle",
@@ -300,33 +299,23 @@ const OPENPOSE_NAMES = [
   "LEye",
   "REar",
   "LEar",
-  "LBigToe",
-  "LSmallToe",
-  "LHeel",
-  "RBigToe",
-  "RSmallToe",
-  "RHeel",
 ];
 
 const OPENPOSE_EDGES = [
-  [0, 1], [1, 2], [2, 3], [3, 4],
-  [1, 5], [5, 6], [6, 7],
-  [1, 8],
-  [8, 9], [9, 10], [10, 11],
-  [8, 12], [12, 13], [13, 14],
+  [1, 2], [1, 5],
+  [2, 3], [3, 4],
+  [5, 6], [6, 7],
+  [1, 8], [8, 9], [9, 10],
+  [1, 11], [11, 12], [12, 13],
+  [1, 0], [0, 14], [14, 16],
   [0, 15], [15, 17],
-  [0, 16], [16, 18],
-  [11, 24], [11, 22], [22, 23],
-  [14, 21], [14, 19], [19, 20],
 ];
 
-// OpenPose-like vivid palette (Body25 order)
+// OpenPose COCO-18 palette (from OpenPose source poseParameters.cpp)
 const OPENPOSE_COLORS = [
-  "#ff0000", "#ff5500", "#ffaa00", "#ffff00", "#aaff00",
-  "#55ff00", "#00ff00", "#00ff55", "#00ffaa", "#00ffff",
-  "#00aaff", "#0055ff", "#0000ff", "#5500ff", "#aa00ff",
-  "#ff00ff", "#ff00aa", "#ff0055", "#ff0000", "#ff5500",
-  "#ffaa00", "#ffff00", "#aaff00", "#55ff00", "#00ff00",
+  "#ff0055", "#ff0000", "#ff5500", "#ffaa00", "#ffff00", "#aaff00",
+  "#55ff00", "#00ff00", "#00ff55", "#00ffaa", "#00ffff", "#00aaff",
+  "#0055ff", "#0000ff", "#ff00aa", "#aa00ff", "#ff00ff", "#5500ff",
 ];
 
 const OPENPOSE_TO_BONE = {
@@ -340,7 +329,6 @@ const OPENPOSE_TO_BONE = {
   LShoulder: ["mixamorigLeftArm", "LeftArm", "mixamorigLeftShoulder", "LeftShoulder"],
   LElbow: ["mixamorigLeftForeArm", "LeftForeArm", "mixamorigLeftArm", "LeftArm"],
   LWrist: ["mixamorigLeftHand", "LeftHand", "mixamorigLeftForeArm", "LeftForeArm"],
-  MidHip: ["mixamorigHips", "Hips", "Root"],
   RHip: ["mixamorigRightUpLeg", "RightUpLeg"],
   RKnee: ["mixamorigRightLeg", "RightLeg"],
   RAnkle: ["mixamorigRightFoot", "RightFoot"],
@@ -352,12 +340,6 @@ const OPENPOSE_TO_BONE = {
   LEye: ["mixamorigLeftEye", "LeftEye"],
   REar: ["mixamorigRightEar", "RightEar"],
   LEar: ["mixamorigLeftEar", "LeftEar"],
-  LBigToe: ["mixamorigLeftToeBase", "LeftToeBase"],
-  LSmallToe: ["mixamorigLeftToe_End", "LeftToe_End"],
-  LHeel: ["mixamorigLeftFoot", "LeftFoot"],
-  RBigToe: ["mixamorigRightToeBase", "RightToeBase"],
-  RSmallToe: ["mixamorigRightToe_End", "RightToe_End"],
-  RHeel: ["mixamorigRightFoot", "RightFoot"],
 };
 async function loadThreeBundle() {
   if (threeBundlePromise) return threeBundlePromise;
@@ -1997,7 +1979,6 @@ function buildOverlay(node, widget, stateRef) {
     camera.aspect = outW / Math.max(1, outH);
     camera.updateProjectionMatrix();
     syncProjectionState();
-    const positionsOut = computeOpenPosePositions2d(outW, outH);
 
     const canvas = document.createElement("canvas");
     canvas.width = outW;
@@ -2006,7 +1987,17 @@ function buildOverlay(node, widget, stateRef) {
     if (!ctx) return "";
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, outW, outH);
-    drawOpenPoseSkeleton(ctx, positionsOut, { lineWidth: 3, pointRadius: 4 });
+    const strokeStyle = getOpenPoseStrokeStyle(outW, outH);
+    const drawCharacters = getPoseDrawCharacters();
+    if (drawCharacters.length) {
+      drawCharacters.forEach((ch) => {
+        const pose2d = computeOpenPosePositions2d(outW, outH, null, ch);
+        drawOpenPoseSkeleton(ctx, pose2d, strokeStyle);
+      });
+    } else {
+      const positionsOut = computeOpenPosePositions2d(outW, outH);
+      drawOpenPoseSkeleton(ctx, positionsOut, strokeStyle);
+    }
 
     camera.position.fromArray(prev.position);
     orbit.target.fromArray(prev.target);
@@ -2443,10 +2434,75 @@ function buildOverlay(node, widget, stateRef) {
     node?.graph?.setDirtyCanvas(true, true);
   }
 
-  function computeOpenPosePositions2d(width, height, frameRect = null) {
+  function getPoseDrawCharacters() {
+    if (Array.isArray(characters) && characters.length) {
+      return characters.filter((ch) => ch && ch.modelRoot);
+    }
+    const active = getActiveCharacter();
+    return active ? [active] : [];
+  }
+
+  function distance2d(a, b) {
+    if (!a || !b) return Infinity;
+    const dx = Number(a.x || 0) - Number(b.x || 0);
+    const dy = Number(a.y || 0) - Number(b.y || 0);
+    return Math.hypot(dx, dy);
+  }
+
+  function sanitizeOpenPosePositions2d(positions2d) {
+    if (!Array.isArray(positions2d) || !positions2d.length) return positions2d;
+    const out = positions2d.slice();
+
+    const neck = out[1];
+    const rightHip = out[8];
+    const leftHip = out[11];
+    const hipCenter = (rightHip && leftHip)
+      ? { x: (rightHip.x + leftHip.x) * 0.5, y: (rightHip.y + leftHip.y) * 0.5 }
+      : (rightHip || leftHip || null);
+    const torsoSize = (neck && hipCenter) ? distance2d(neck, hipCenter) : null;
+
+    // Guard against synthesized head points drifting far from the body.
+    if (torsoSize && Number.isFinite(torsoSize) && torsoSize > 1e-6 && neck) {
+      const maxHeadDistFromNeck = torsoSize * 1.35;
+      [0, 14, 15, 16, 17].forEach((idx) => {
+        const p = out[idx];
+        if (p && distance2d(p, neck) > maxHeadDistFromNeck) {
+          out[idx] = null;
+        }
+      });
+      const nose = out[0];
+      if (nose) {
+        if (out[14] && distance2d(out[14], nose) > torsoSize * 0.9) out[14] = null;
+        if (out[15] && distance2d(out[15], nose) > torsoSize * 0.9) out[15] = null;
+        if (out[16] && distance2d(out[16], nose) > torsoSize * 1.2) out[16] = null;
+        if (out[17] && distance2d(out[17], nose) > torsoSize * 1.2) out[17] = null;
+      }
+    }
+
+    // Remove isolated points that are not connected by any visible limb edge.
+    const connected = new Set();
+    OPENPOSE_EDGES.forEach(([a, b]) => {
+      if (out[a] && out[b]) {
+        connected.add(a);
+        connected.add(b);
+      }
+    });
+    out.forEach((p, idx) => {
+      if (!p) return;
+      if (!connected.has(idx)) {
+        out[idx] = null;
+      }
+    });
+
+    return out;
+  }
+
+  function computeOpenPosePositions2d(width, height, frameRect = null, character = null) {
+    const targetCharacter = character || getActiveCharacter();
+    const targetBoneMap = targetCharacter?.boneNameMap || boneNameMap;
     const positions2d = [];
     OPENPOSE_NAMES.forEach((name, idx) => {
-      const bone = findBoneByAliases(boneNameMap, OPENPOSE_TO_BONE[name] || []);
+      const bone = findBoneByAliases(targetBoneMap, OPENPOSE_TO_BONE[name] || []);
       if (!bone) {
         positions2d[idx] = null;
         return;
@@ -2456,20 +2512,27 @@ function buildOverlay(node, widget, stateRef) {
       positions2d[idx] = projectWorldToOverlay(pos, width, height, frameRect);
     });
 
-    const activeCharacter = getActiveCharacter();
-    const headSynth = activeCharacter
-      ? getCachedFaceLandmarks2d(activeCharacter, width, height, frameRect)
+    const headSynth = targetCharacter
+      ? getCachedFaceLandmarks2d(targetCharacter, width, height, frameRect)
       : null;
     if (headSynth) {
-      // OpenPose indexes: 0 nose, 15 right eye, 16 left eye, 17 right ear, 18 left ear.
+      // COCO-18 indexes: 0 nose, 14 right eye, 15 left eye, 16 right ear, 17 left ear.
       if (!positions2d[0]) positions2d[0] = headSynth.nose;
       // Always override face lateral points for consistency across rigs.
-      positions2d[15] = headSynth.reye;
-      positions2d[16] = headSynth.leye;
-      positions2d[17] = headSynth.rear;
-      positions2d[18] = headSynth.lear;
+      positions2d[14] = headSynth.reye;
+      positions2d[15] = headSynth.leye;
+      positions2d[16] = headSynth.rear;
+      positions2d[17] = headSynth.lear;
     }
-    return positions2d;
+    return sanitizeOpenPosePositions2d(positions2d);
+  }
+
+  function getOpenPoseStrokeStyle(width, height) {
+    const minDim = Math.max(1, Math.min(Number(width || 0), Number(height || 0)));
+    // Stronger adaptive scaling so thickness difference is clearly visible across resolutions.
+    const lineWidth = Math.max(1.4, Math.min(8.0, minDim / 192));
+    const pointRadius = Math.max(2.0, Math.min(10.0, lineWidth * 1.25));
+    return { lineWidth, pointRadius };
   }
 
   function drawOpenPoseSkeleton(ctx, positions2d, options = {}) {
@@ -2519,6 +2582,7 @@ function buildOverlay(node, widget, stateRef) {
     ctx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
     const frameRect = getRenderFrameRect(overlayCanvas.width, overlayCanvas.height);
+    const strokeStyle = getOpenPoseStrokeStyle(frameRect.width, frameRect.height);
 
     // Shade outside active render region so camera framing is explicit.
     ctx.fillStyle = "rgba(2, 4, 8, 0.36)";
@@ -2530,11 +2594,24 @@ function buildOverlay(node, widget, stateRef) {
     ctx.lineWidth = 1.5;
     ctx.strokeRect(frameRect.x + 0.5, frameRect.y + 0.5, Math.max(1, frameRect.width - 1), Math.max(1, frameRect.height - 1));
 
-    const positions2d = computeOpenPosePositions2d(overlayCanvas.width, overlayCanvas.height, frameRect);
-    drawOpenPoseSkeleton(ctx, positions2d, { lineWidth: 3, pointRadius: 4 });
+    const drawCharacters = getPoseDrawCharacters();
+    let activePositions = null;
+    if (drawCharacters.length) {
+      drawCharacters.forEach((ch, idx) => {
+        const pose2d = computeOpenPosePositions2d(overlayCanvas.width, overlayCanvas.height, frameRect, ch);
+        drawOpenPoseSkeleton(ctx, pose2d, strokeStyle);
+        if (!activePositions && (ch.id === activeCharacterId || idx === 0)) {
+          activePositions = pose2d;
+        }
+      });
+    }
+    if (!activePositions) {
+      activePositions = computeOpenPosePositions2d(overlayCanvas.width, overlayCanvas.height, frameRect);
+      drawOpenPoseSkeleton(ctx, activePositions, strokeStyle);
+    }
 
     // Extra head contour for readability.
-    const hp = [positions2d[17], positions2d[15], positions2d[0], positions2d[16], positions2d[18]];
+    const hp = [activePositions[16], activePositions[14], activePositions[0], activePositions[15], activePositions[17]];
     if (hp.every(Boolean)) {
       ctx.strokeStyle = "#8ecbff";
       ctx.lineWidth = 2;

@@ -1,6 +1,7 @@
 from typing import Tuple, Dict, List
 
 from .prompt_parser import PromptParser
+from .replacements_utils import apply_replacements
 
 
 class PromptTemplateEditorMulti:
@@ -68,6 +69,7 @@ class PromptTemplateEditorMulti:
                 "prefix_negative": ("STRING", {"forceInput": True, "multiline": True}),
                 "suffix_positive": ("STRING", {"forceInput": True, "multiline": True}),
                 "suffix_negative": ("STRING", {"forceInput": True, "multiline": True}),
+                "replace_dict": ("DICT", {"forceInput": True}),
             },
         }
 
@@ -96,13 +98,19 @@ class PromptTemplateEditorMulti:
         prefix_negative: str = "",
         suffix_positive: str = "",
         suffix_negative: str = "",
+        replace_dict: dict = None,
     ) -> Tuple[str, ...]:
         variants = self._variant_list(count)
         parser = PromptParser(seed=seed)
+        template_resolved = apply_replacements(template or "", replace_dict)
+        prefix_positive_resolved = apply_replacements(prefix_positive or "", replace_dict)
+        prefix_negative_resolved = apply_replacements(prefix_negative or "", replace_dict)
+        suffix_positive_resolved = apply_replacements(suffix_positive or "", replace_dict)
+        suffix_negative_resolved = apply_replacements(suffix_negative or "", replace_dict)
 
         if not parse_template:
-            positive_text = "\n".join([p for p in [prefix_positive or "", template or "", suffix_positive or ""] if p])
-            negative_text = "\n".join([p for p in [prefix_negative or "", suffix_negative or ""] if p])
+            positive_text = "\n".join([p for p in [prefix_positive_resolved, template_resolved, suffix_positive_resolved] if p])
+            negative_text = "\n".join([p for p in [prefix_negative_resolved, suffix_negative_resolved] if p])
 
             positive_by_variant = self._raw_variant_text(positive_text, parser, variants)
             negative_by_variant = self._raw_variant_text(negative_text, parser, variants)
@@ -118,11 +126,11 @@ class PromptTemplateEditorMulti:
             return tuple(outputs)
 
         try:
-            template_map = parser.parse_multi(template or "", variants)
-            prefix_pos_map = parser.parse_multi(prefix_positive or "", variants)
-            suffix_pos_map = parser.parse_multi(suffix_positive or "", variants)
-            prefix_neg_map = parser.parse_multi(prefix_negative or "", variants)
-            suffix_neg_map = parser.parse_multi(suffix_negative or "", variants)
+            template_map = parser.parse_multi(template_resolved, variants)
+            prefix_pos_map = parser.parse_multi(prefix_positive_resolved, variants)
+            suffix_pos_map = parser.parse_multi(suffix_positive_resolved, variants)
+            prefix_neg_map = parser.parse_multi(prefix_negative_resolved, variants)
+            suffix_neg_map = parser.parse_multi(suffix_negative_resolved, variants)
         except Exception as exc:
             raise ValueError(f"Failed to parse template: {exc}") from exc
 

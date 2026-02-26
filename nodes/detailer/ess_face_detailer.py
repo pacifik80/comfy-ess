@@ -8,13 +8,16 @@ import sys
 from pathlib import Path
 
 import comfy.samplers
-import nodes
 import numpy as np
 import torch
 from comfy_extras import nodes_differential_diffusion
-from nodes import MAX_RESOLUTION
 
-_custom_nodes_dir = Path(__file__).resolve().parents[2]
+from ..comfy_nodes_loader import load_comfy_nodes
+
+nodes = load_comfy_nodes(required_attrs=("MAX_RESOLUTION", "NODE_CLASS_MAPPINGS"))
+MAX_RESOLUTION = nodes.MAX_RESOLUTION
+
+_custom_nodes_dir = Path(__file__).resolve().parents[3]
 _impact_modules_dir = _custom_nodes_dir / "comfyui-impact-pack" / "modules"
 if _impact_modules_dir.exists():
     sys.path.append(os.fspath(_impact_modules_dir))

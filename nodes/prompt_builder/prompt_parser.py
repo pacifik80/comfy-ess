@@ -81,13 +81,16 @@ class PromptParser:
 
     def split_prompt(self, text: str) -> Tuple[str, str]:
         """Split text into positive and negative parts based on !> separator.
-        Ignore separators that occur inside << >> variant blocks.
+        Ignore separators that occur inside nested option/header blocks or
+        inside << >> variant blocks.
         """
         if not text:
             return "", ""
         i = 0
         variant_depth = 0
-        while i < len(text) - 1:
+        brace_depth = 0
+        bracket_depth = 0
+        while i < len(text):
             pair = text[i:i+2]
             if pair == "<<":
                 variant_depth += 1
@@ -98,7 +101,18 @@ class PromptParser:
                     variant_depth -= 1
                 i += 2
                 continue
-            if pair == "!>" and variant_depth == 0:
+
+            ch = text[i]
+            if ch == "{":
+                brace_depth += 1
+            elif ch == "}":
+                brace_depth = max(0, brace_depth - 1)
+            elif ch == "[":
+                bracket_depth += 1
+            elif ch == "]":
+                bracket_depth = max(0, bracket_depth - 1)
+
+            if pair == "!>" and variant_depth == 0 and brace_depth == 0 and bracket_depth == 0:
                 pos = text[:i].rstrip()
                 neg = text[i+2:].lstrip()
                 return pos, neg
@@ -197,27 +211,82 @@ class PromptParser:
 
         return segments
 
+    def _parse_variant_segment_labels(self, raw_segment: str) -> Tuple[Optional[set[str]], str, bool]:
+        """
+        Parse optional variant labels at the segment start.
+
+        Returns:
+            (labels, body, invalid_header)
+            - labels: None for unlabeled segments, otherwise a set of labels.
+            - body: segment body with label prefix removed when labeled.
+            - invalid_header: True when an explicit label header exists but is invalid.
+        """
+        stripped = raw_segment.lstrip()
+        if not stripped:
+            return None, raw_segment, False
+
+        colon_idx = stripped.find(":")
+        if colon_idx == -1:
+            return None, raw_segment, False
+
+        prefix = stripped[:colon_idx]
+        body = stripped[colon_idx + 1:].lstrip()
+
+        # Preserve legacy single-label syntax handling: "a:"
+        if colon_idx == 1:
+            candidate = prefix[0]
+            if candidate in self._variant_letters:
+                return {candidate}, body, False
+            self._logger.warning("Ignoring invalid variant label '%s:' in template block.", candidate)
+            return None, "", True
+
+        # Multi-label syntax is recognized only when comma-separated, e.g. "a,b,c:"
+        # This avoids misclassifying generic text with colons as a label header.
+        if "," not in prefix:
+            return None, raw_segment, False
+
+        labels: set[str] = set()
+        invalid_tokens: list[str] = []
+        for token in prefix.split(","):
+            candidate = token.strip()
+            if len(candidate) == 1 and candidate in self._variant_letters:
+                labels.add(candidate)
+            else:
+                invalid_tokens.append(candidate)
+
+        if invalid_tokens:
+            self._logger.warning(
+                "Ignoring invalid variant labels in '%s:' in template block.",
+                prefix.strip(),
+            )
+
+        if not labels:
+            return None, "", True
+
+        return labels, body, False
+
     def _render_variant_block(self, content: str, variant: str, allowed_variants: List[str]) -> str:
         pieces = []
+        allowed_set = set(allowed_variants)
         for segment in self._split_variant_segments(content):
             raw = segment
-            stripped = raw.lstrip()
-            label = None
-            body = raw
-            if len(stripped) >= 2 and stripped[1] == ":":
-                candidate = stripped[0]
-                if candidate in self._variant_letters:
-                    label = candidate
-                    body = stripped[2:].lstrip()
-                else:
-                    self._logger.warning("Ignoring invalid variant label '%s:' in template block.", candidate)
-                    continue
-
-            if label and label not in allowed_variants:
-                self._logger.warning("Ignoring variant label '%s:' not enabled by output count.", label)
+            labels, body, invalid_header = self._parse_variant_segment_labels(raw)
+            if invalid_header:
                 continue
 
-            if label is None or label == variant:
+            if labels is None:
+                pieces.append(body)
+                continue
+
+            enabled_labels = labels.intersection(allowed_set)
+            if not enabled_labels:
+                self._logger.warning(
+                    "Ignoring variant labels '%s:' not enabled by output count.",
+                    ",".join(sorted(labels)),
+                )
+                continue
+
+            if variant in enabled_labels:
                 pieces.append(body)
 
         combined = "".join(pieces)
@@ -294,25 +363,28 @@ class PromptParser:
     def _render_variant_block_with_neg(self, content: str, variant: str, allowed_variants: List[str]) -> Tuple[str, str]:
         pos_parts = []
         neg_parts = []
+        allowed_set = set(allowed_variants)
         for segment in self._split_variant_segments(content):
             raw = segment
-            stripped = raw.lstrip()
-            label = None
-            body = raw
-            if len(stripped) >= 2 and stripped[1] == ":":
-                candidate = stripped[0]
-                if candidate in self._variant_letters:
-                    label = candidate
-                    body = stripped[2:].lstrip()
-                else:
-                    self._logger.warning("Ignoring invalid variant label '%s:' in template block.", candidate)
-                    continue
-
-            if label and label not in allowed_variants:
-                self._logger.warning("Ignoring variant label '%s:' not enabled by output count.", label)
+            labels, body, invalid_header = self._parse_variant_segment_labels(raw)
+            if invalid_header:
                 continue
 
-            if label is None or label == variant:
+            if labels is None:
+                seg_pos, seg_neg = self.expand_variant_blocks_with_neg(body, variant, allowed_variants)
+                pos_parts.append(seg_pos)
+                neg_parts.append(seg_neg)
+                continue
+
+            enabled_labels = labels.intersection(allowed_set)
+            if not enabled_labels:
+                self._logger.warning(
+                    "Ignoring variant labels '%s:' not enabled by output count.",
+                    ",".join(sorted(labels)),
+                )
+                continue
+
+            if variant in enabled_labels:
                 seg_pos, seg_neg = self.expand_variant_blocks_with_neg(body, variant, allowed_variants)
                 pos_parts.append(seg_pos)
                 neg_parts.append(seg_neg)
@@ -493,39 +565,41 @@ class PromptParser:
             selected = self.select_option(options, block_count)
             if not selected:
                 return "", ""
-            
-            # Process nested blocks in the selected content
-            content = selected.content
-            i = 0
-            while i < len(content):
-                if content[i] == '{':
-                    end = find_matching_brace(content, i)
-                    if end != -1:
-                        nested_content = content[i+1:end]
-                        nested_result, nested_neg = process_block(nested_content, depth + 1)
-                        if nested_result:
-                            content = content[:i] + nested_result + content[end+1:]
-                            i += len(nested_result)
-                        else:
-                            content = content[:i] + content[end+1:]
-                        if nested_neg:
-                            extra_neg.append(nested_neg)
-                    else:
-                        i += 1
-                else:
+
+            def resolve_nested_blocks(text: str) -> str:
+                resolved = text or ""
+                i = 0
+                while i < len(resolved):
+                    if resolved[i] == '{':
+                        end = find_matching_brace(resolved, i)
+                        if end != -1:
+                            nested_content = resolved[i + 1:end]
+                            nested_result, nested_neg = process_block(nested_content, depth + 1)
+                            if nested_result:
+                                resolved = resolved[:i] + nested_result + resolved[end + 1:]
+                                i += len(nested_result)
+                            else:
+                                resolved = resolved[:i] + resolved[end + 1:]
+                            if nested_neg:
+                                extra_neg.append(nested_neg)
+                            continue
                     i += 1
-            
-            # Clean up the content
-            content_lines = []
-            for line in content.split('\n'):
-                line = line.strip()
-                if line and line != '.':
-                    # Remove any remaining block markers and option markers
-                    line = line.replace('{', '').replace('}', '')
-                    if not line.startswith('[') and not line.startswith('|'):
-                        content_lines.append(line)
-            
-            return '\n'.join(content_lines).strip(), selected.inverse_content
+                return resolved
+
+            def cleanup_content(content: str) -> str:
+                content_lines = []
+                for line in (content or "").split('\n'):
+                    line = line.strip()
+                    if line and line != '.':
+                        # Remove any remaining block markers and option markers
+                        line = line.replace('{', '').replace('}', '')
+                        if not line.startswith('[') and not line.startswith('|'):
+                            content_lines.append(line)
+                return '\n'.join(content_lines).strip()
+
+            content = resolve_nested_blocks(selected.content)
+            inverse_content = resolve_nested_blocks(selected.inverse_content)
+            return cleanup_content(content), cleanup_content(inverse_content)
         
         # Process all blocks from innermost to outermost
         i = 0

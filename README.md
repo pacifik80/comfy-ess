@@ -12,7 +12,8 @@ All nodes appear under `ESS/*` categories in the ComfyUI add menu.
 
 **Prompt Builder**
 - `ESS - Prompt Template Editor`: rich template editor; optionally parses with seed and supports prefix/suffix positive/negative inputs.
-- `ESS - Prompt Template Editor - Multioutput`: outputs up to 10 positive/negative pairs using `<< >>` variant blocks (a-j).
+- `ESS - Prompt Template Editor - Multioutput`: outputs up to 10 positive/negative pairs using `<< >>` variant blocks (a-j), with labels like `a:` or comma-separated `a,b,c:`.
+- `ESS - Scene Flow Editor`: visual sectioned flow editor with `element`/`sequential`/`random`/`output` nodes, weighted random links, and single-scene generation output.
 - `ESS - Text Prompt Generator`: parses positive/negative templates into final prompts (inverse parts cross-fed).
 - `ESS - Text Prompt Replacer`: replaces `%replace_a%`, `%replace_b%`, `%replace_c%` placeholders in a prompt.
 - `ESS - Replace Dict`: creates or extends a replacement dictionary (key/value pairs).

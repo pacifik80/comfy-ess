@@ -34,7 +34,7 @@ _DEFAULT_MODELS = (
 
 
 def _default_model_dir() -> Path:
-    return Path(__file__).resolve().parents[1] / "models" / "ultralytics"
+    return Path(__file__).resolve().parents[2] / "models" / "ultralytics"
 
 
 def _ultralytics_search_roots() -> list[Path]:

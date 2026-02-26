@@ -105,6 +105,13 @@ function ensureStyles() {
 .ess-template-editor .ess-tpl-comment {
   color: #6e7681;
 }
+.ess-template-editor .ess-tpl-placeholder {
+  color: #38bdf8;
+}
+.ess-template-editor .ess-tpl-placeholder-active {
+  color: #7dd3fc;
+  font-weight: 700;
+}
 `;
   if (existing) {
     existing.textContent = css;
@@ -306,22 +313,62 @@ function collectVariantTokens(text, open, close) {
 
 function collectVariantLabelIndices(text, pairs) {
   const labelIndices = new Set();
+  const isVariantLetter = (ch) => ch >= "a" && ch <= "j";
   for (const [open, close] of pairs.entries()) {
     let depth = 0;
     let i = open + 2;
     let segmentStart = open + 2;
 
-    const markLabel = (start) => {
+    const markLabel = (start, end) => {
       let j = start;
-      while (j < close && /\s/.test(text[j])) {
+      while (j < end && /\s/.test(text[j])) {
         j += 1;
       }
-      if (j + 1 < close) {
-        const letter = text[j];
-        const colon = text[j + 1];
-        if (colon === ":" && letter >= "a" && letter <= "j") {
-          labelIndices.add(j);
-          labelIndices.add(j + 1);
+
+      if (j >= end) {
+        return;
+      }
+
+      const colonIndex = text.indexOf(":", j);
+      if (colonIndex === -1 || colonIndex >= end) {
+        return;
+      }
+
+      const rawPrefix = text.slice(j, colonIndex);
+      const prefix = rawPrefix.trim();
+      if (!prefix) {
+        return;
+      }
+
+      // Legacy single-label syntax: "a:"
+      if (prefix.length === 1 && isVariantLetter(prefix)) {
+        for (let k = j; k <= colonIndex; k += 1) {
+          const ch = text[k];
+          if (isVariantLetter(ch) || ch === ":" || ch === ",") {
+            labelIndices.add(k);
+          }
+        }
+        return;
+      }
+
+      // Multi-label syntax: "a,b,c:"
+      if (!prefix.includes(",")) {
+        return;
+      }
+
+      const tokens = prefix
+        .split(",")
+        .map((token) => token.trim())
+        .filter((token) => token.length > 0);
+      const hasValidToken = tokens.some((token) => token.length === 1 && isVariantLetter(token));
+      if (!hasValidToken) {
+        return;
+      }
+
+      for (let k = j; k <= colonIndex; k += 1) {
+        const ch = text[k];
+        if (isVariantLetter(ch) || ch === "," || ch === ":") {
+          labelIndices.add(k);
         }
       }
     };
@@ -341,14 +388,14 @@ function collectVariantLabelIndices(text, pairs) {
         continue;
       }
       if (pair === "||" && depth === 0) {
-        markLabel(segmentStart);
+        markLabel(segmentStart, i);
         segmentStart = i + 2;
         i += 2;
         continue;
       }
       i += 1;
     }
-    markLabel(segmentStart);
+    markLabel(segmentStart, close);
   }
   return labelIndices;
 }
@@ -401,6 +448,26 @@ function renderHighlight(text, caret) {
     if (ch === "#") {
       isComment[i] = true;
       inComment = true;
+    }
+  }
+
+  // Mark %placeholder% tokens (no spaces inside).
+  for (let i = 0; i < length; i += 1) {
+    if (isComment[i] || text[i] !== "%") {
+      continue;
+    }
+    let j = i + 1;
+    while (j < length && text[j] !== "%" && !/\s/.test(text[j])) {
+      j += 1;
+    }
+    if (j < length && text[j] === "%" && j > i + 1) {
+      const active = caret >= i && caret <= j + 1;
+      const klass = active ? "ess-tpl-placeholder-active" : "ess-tpl-placeholder";
+      for (let k = i; k <= j; k += 1) {
+        classSets[k].add(klass);
+        isSpecial[k] = true;
+      }
+      i = j;
     }
   }
 
