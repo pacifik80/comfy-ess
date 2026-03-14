@@ -51,13 +51,13 @@ class PoseMeshEditor:
     This Python side primarily:
       - Exposes the custom widget to ComfyUI.
       - Parses the widget payload.
-      - Returns three IMAGE outputs (one per camera preview).
+      - Returns three IMAGE outputs (preview, depth, edges).
     """
 
     CATEGORY = "ESS/Pose"
     FUNCTION = "render"
     RETURN_TYPES = ("IMAGE", "IMAGE", "IMAGE")
-    RETURN_NAMES = ("preview_cam1", "preview_cam2", "preview_cam3")
+    RETURN_NAMES = ("preview", "depth", "edges")
 
     @classmethod
     def INPUT_TYPES(cls):
@@ -94,18 +94,15 @@ class PoseMeshEditor:
         except Exception as exc:
             raise ValueError(f"Pose Mesh Editor received invalid JSON: {exc}") from exc
 
-        preview_pngs = parsed.get("preview_pngs", None)
-        if not isinstance(preview_pngs, list):
-            preview_png = parsed.get("preview_png", "")
-            preview_pngs = [preview_png]
-        preview_pngs = list(preview_pngs[:3])
-        while len(preview_pngs) < 3:
-            preview_pngs.append("")
-
         if output_image:
-            image_1 = _decode_preview(preview_pngs[0])
-            image_2 = _decode_preview(preview_pngs[1])
-            image_3 = _decode_preview(preview_pngs[2])
+            preview_png = str(parsed.get("preview_png", "") or "")
+            if not preview_png:
+                legacy_previews = parsed.get("preview_pngs", None)
+                if isinstance(legacy_previews, list) and legacy_previews:
+                    preview_png = str(legacy_previews[0] or "")
+            image_1 = _decode_preview(preview_png)
+            image_2 = _decode_preview(str(parsed.get("depth_png", "") or ""))
+            image_3 = _decode_preview(str(parsed.get("edges_png", "") or ""))
         else:
             tiny = torch.zeros((1, 1, 1, 3), dtype=torch.float32)
             image_1 = tiny

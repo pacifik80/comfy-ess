@@ -1,0 +1,588 @@
+import { extractLoraTokens } from "./ess_lora_tokens_shared.js";
+
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function buildPairs(text) {
+  const pairs = new Map();
+  const reverse = new Map();
+  const stack = [];
+  for (let i = 0; i < text.length; i += 1) {
+    const ch = text[i];
+    if (ch === "{") {
+      stack.push(i);
+    } else if (ch === "}") {
+      if (stack.length > 0) {
+        const open = stack.pop();
+        pairs.set(open, i);
+        reverse.set(i, open);
+      }
+    }
+  }
+  return { pairs, reverse };
+}
+
+function findActiveScope(text, caret, pairs, reverse) {
+  if (caret > 0) {
+    const prev = text[caret - 1];
+    if (prev === "{" && pairs.has(caret - 1)) {
+      return { open: caret - 1, close: pairs.get(caret - 1) };
+    }
+    if (prev === "}" && reverse.has(caret - 1)) {
+      const open = reverse.get(caret - 1);
+      return { open, close: caret - 1 };
+    }
+  }
+  if (caret < text.length) {
+    const curr = text[caret];
+    if (curr === "{" && pairs.has(caret)) {
+      return { open: caret, close: pairs.get(caret) };
+    }
+    if (curr === "}" && reverse.has(caret)) {
+      const open = reverse.get(caret);
+      return { open, close: caret };
+    }
+  }
+
+  const stack = [];
+  for (let i = 0; i < caret; i += 1) {
+    const ch = text[i];
+    if (ch === "{") {
+      stack.push(i);
+    } else if (ch === "}" && stack.length > 0) {
+      stack.pop();
+    }
+  }
+  if (stack.length === 0) {
+    return null;
+  }
+  const open = stack[stack.length - 1];
+  const close = pairs.get(open);
+  if (close == null) {
+    return null;
+  }
+  return { open, close };
+}
+
+function collectScopeTokens(text, open, close) {
+  const active = new Set();
+  active.add(open);
+  active.add(close);
+  let depth = 0;
+  for (let i = open + 1; i < close; i += 1) {
+    const ch = text[i];
+    if (ch === "{") {
+      depth += 1;
+    } else if (ch === "}") {
+      if (depth > 0) {
+        depth -= 1;
+      }
+    } else if (ch === "|" && depth === 0) {
+      active.add(i);
+    }
+  }
+  return active;
+}
+
+function buildVariantPairs(text) {
+  const pairs = new Map();
+  const reverse = new Map();
+  const stack = [];
+  for (let i = 0; i < text.length - 1; i += 1) {
+    const pair = text.slice(i, i + 2);
+    if (pair === "<<") {
+      stack.push(i);
+      i += 1;
+      continue;
+    }
+    if (pair === ">>") {
+      if (stack.length > 0) {
+        const open = stack.pop();
+        pairs.set(open, i);
+        reverse.set(i, open);
+      }
+      i += 1;
+    }
+  }
+  return { pairs, reverse };
+}
+
+function findActiveVariantScope(text, caret, pairs, reverse) {
+  if (caret >= 2) {
+    const prevPair = text.slice(caret - 2, caret);
+    if (prevPair === "<<" && pairs.has(caret - 2)) {
+      return { open: caret - 2, close: pairs.get(caret - 2) };
+    }
+    if (prevPair === ">>" && reverse.has(caret - 2)) {
+      const open = reverse.get(caret - 2);
+      return { open, close: caret - 2 };
+    }
+  }
+  if (caret < text.length - 1) {
+    const currPair = text.slice(caret, caret + 2);
+    if (currPair === "<<" && pairs.has(caret)) {
+      return { open: caret, close: pairs.get(caret) };
+    }
+    if (currPair === ">>" && reverse.has(caret)) {
+      const open = reverse.get(caret);
+      return { open, close: caret };
+    }
+  }
+
+  const stack = [];
+  for (let i = 0; i < caret - 1; i += 1) {
+    const pair = text.slice(i, i + 2);
+    if (pair === "<<") {
+      stack.push(i);
+      i += 1;
+      continue;
+    }
+    if (pair === ">>" && stack.length > 0) {
+      stack.pop();
+      i += 1;
+      continue;
+    }
+  }
+  if (stack.length === 0) {
+    return null;
+  }
+  const open = stack[stack.length - 1];
+  const close = pairs.get(open);
+  if (close == null) {
+    return null;
+  }
+  return { open, close };
+}
+
+function collectVariantTokens(text, open, close) {
+  const active = new Set();
+  active.add(open);
+  active.add(open + 1);
+  active.add(close);
+  active.add(close + 1);
+  let depth = 0;
+  for (let i = open + 2; i < close; i += 1) {
+    const pair = text.slice(i, i + 2);
+    if (pair === "<<") {
+      depth += 1;
+      i += 1;
+      continue;
+    }
+    if (pair === ">>") {
+      if (depth > 0) {
+        depth -= 1;
+      }
+      i += 1;
+      continue;
+    }
+    if (pair === "||" && depth === 0) {
+      active.add(i);
+      active.add(i + 1);
+      i += 1;
+    }
+  }
+  return active;
+}
+
+function collectVariantLabelIndices(text, pairs) {
+  const labelIndices = new Set();
+  const isVariantLetter = (ch) => ch >= "a" && ch <= "j";
+  for (const [open, close] of pairs.entries()) {
+    let depth = 0;
+    let i = open + 2;
+    let segmentStart = open + 2;
+
+    const markLabel = (start, end) => {
+      let j = start;
+      while (j < end && /\s/.test(text[j])) {
+        j += 1;
+      }
+
+      if (j >= end) {
+        return;
+      }
+
+      const colonIndex = text.indexOf(":", j);
+      if (colonIndex === -1 || colonIndex >= end) {
+        return;
+      }
+
+      const rawPrefix = text.slice(j, colonIndex);
+      const prefix = rawPrefix.trim();
+      if (!prefix) {
+        return;
+      }
+
+      if (prefix.length === 1 && isVariantLetter(prefix)) {
+        for (let k = j; k <= colonIndex; k += 1) {
+          const ch = text[k];
+          if (isVariantLetter(ch) || ch === ":" || ch === ",") {
+            labelIndices.add(k);
+          }
+        }
+        return;
+      }
+
+      if (!prefix.includes(",")) {
+        return;
+      }
+
+      const tokens = prefix
+        .split(",")
+        .map((token) => token.trim())
+        .filter((token) => token.length > 0);
+      const hasValidToken = tokens.some((token) => token.length === 1 && isVariantLetter(token));
+      if (!hasValidToken) {
+        return;
+      }
+
+      for (let k = j; k <= colonIndex; k += 1) {
+        const ch = text[k];
+        if (isVariantLetter(ch) || ch === "," || ch === ":") {
+          labelIndices.add(k);
+        }
+      }
+    };
+
+    while (i < close) {
+      const pair = text.slice(i, i + 2);
+      if (pair === "<<") {
+        depth += 1;
+        i += 2;
+        continue;
+      }
+      if (pair === ">>") {
+        if (depth > 0) {
+          depth -= 1;
+        }
+        i += 2;
+        continue;
+      }
+      if (pair === "||" && depth === 0) {
+        markLabel(segmentStart, i);
+        segmentStart = i + 2;
+        i += 2;
+        continue;
+      }
+      i += 1;
+    }
+    markLabel(segmentStart, close);
+  }
+  return labelIndices;
+}
+
+function getLoraChipLabel(token) {
+  if (!token?.valid) return String(token?.raw || "");
+  const rawName = String(token.name || "");
+  const baseName = rawName.split("/").pop() || rawName;
+  const cleanName = baseName.replace(/\.safetensors$/i, "");
+  const weight = String(token.displayWeight || "1");
+  const full = `<lora:${cleanName}:${weight}>`;
+  const maxLen = 34;
+  if (full.length <= maxLen) return full;
+  return `${full.slice(0, maxLen - 3)}...`;
+}
+
+export function renderHighlight(text, caret, options = {}) {
+  const knownPlaceholders = options && options.knownPlaceholders instanceof Set
+    ? options.knownPlaceholders
+    : null;
+  const knownLoras = options && options.knownLoras instanceof Set
+    ? options.knownLoras
+    : null;
+  const { pairs, reverse } = buildPairs(text);
+  const activeScope = findActiveScope(text, caret, pairs, reverse);
+  const activeSet = activeScope ? collectScopeTokens(text, activeScope.open, activeScope.close) : new Set();
+  const activeRange = activeScope ? { start: activeScope.open, end: activeScope.close } : null;
+
+  const { pairs: variantPairs, reverse: variantReverse } = buildVariantPairs(text);
+  const variantScope = findActiveVariantScope(text, caret, variantPairs, variantReverse);
+  const variantActiveSet = variantScope ? collectVariantTokens(text, variantScope.open, variantScope.close) : new Set();
+  const variantActiveRange = variantScope
+    ? { start: variantScope.open, end: variantScope.close + 1 }
+    : null;
+  const variantLabelIndices = collectVariantLabelIndices(text, variantPairs);
+
+  const length = text.length;
+  const classSets = Array.from({ length }, () => new Set());
+  const isComment = new Array(length).fill(false);
+  const isSpecial = new Array(length).fill(false);
+  const headerTypes = new Array(length).fill(null);
+  const isLoraTokenChar = new Array(length).fill(false);
+
+  const markClass = (index, className) => {
+    if (index < 0 || index >= length) {
+      return;
+    }
+    classSets[index].add(className);
+    isSpecial[index] = true;
+  };
+
+  let inComment = false;
+  for (let i = 0; i < length; i += 1) {
+    const ch = text[i];
+    if (inComment) {
+      if (ch === "#") {
+        isComment[i] = true;
+        inComment = false;
+        continue;
+      }
+      if (ch === "\n" || ch === "{" || ch === "}" || ch === "|" || ch === "[" || ch === "]" || ch === ":" || ch === "<" || ch === ">") {
+        inComment = false;
+        continue;
+      }
+      isComment[i] = true;
+      continue;
+    }
+    if (ch === "#") {
+      isComment[i] = true;
+      inComment = true;
+    }
+  }
+
+  const loraTokens = extractLoraTokens(text, { knownLoras }).filter((token) => {
+    for (let k = token.start; k < token.end; k += 1) {
+      if (isComment[k]) return false;
+    }
+    for (let k = token.start; k < token.end; k += 1) {
+      isLoraTokenChar[k] = true;
+    }
+    return true;
+  });
+  const loraTokenByStart = new Map(loraTokens.map((token) => [token.start, token]));
+
+  for (let i = 0; i < length; i += 1) {
+    if (isComment[i] || isLoraTokenChar[i] || text[i] !== "%") {
+      continue;
+    }
+    let j = i + 1;
+    while (j < length && text[j] !== "%" && !/\s/.test(text[j])) {
+      j += 1;
+    }
+    if (j < length && text[j] === "%" && j > i + 1) {
+      const active = caret >= i && caret <= j + 1;
+      const key = text.slice(i + 1, j);
+      const isUnknown = knownPlaceholders ? !knownPlaceholders.has(key) : false;
+      const klass = isUnknown
+        ? (active ? "ess-tpl-placeholder-unknown-active" : "ess-tpl-placeholder-unknown")
+        : (active ? "ess-tpl-placeholder-active" : "ess-tpl-placeholder");
+      for (let k = i; k <= j; k += 1) {
+        classSets[k].add(klass);
+        isSpecial[k] = true;
+      }
+      i = j;
+    }
+  }
+
+  for (let i = 0; i < length; i += 1) {
+    if (isLoraTokenChar[i]) {
+      continue;
+    }
+    const ch = text[i];
+    if (ch !== "[") {
+      continue;
+    }
+    const close = text.indexOf("]", i + 1);
+    if (close === -1) {
+      break;
+    }
+    const headerContent = text.slice(i + 1, close);
+    const colonIndex = headerContent.indexOf(":");
+    if (colonIndex >= 0) {
+      const nameStart = i + 1;
+      const nameEnd = i + 1 + colonIndex;
+      const numStart = nameEnd + 1;
+      const numEnd = close;
+      for (let j = nameStart; j < nameEnd; j += 1) {
+        headerTypes[j] = "name";
+      }
+      for (let j = numStart; j < numEnd; j += 1) {
+        headerTypes[j] = "number";
+      }
+    } else {
+      const isNumber = /^\s*\d+(?:\.\d+)?\s*$/.test(headerContent);
+      const type = isNumber ? "number" : "name";
+      for (let j = i + 1; j < close; j += 1) {
+        headerTypes[j] = type;
+      }
+    }
+    i = close;
+  }
+
+  const stack = [];
+  let negativeDepthCount = 0;
+  let bracketDepth = 0;
+  let variantDepth = 0;
+  const variantNegativeStack = [];
+
+  for (let i = 0; i < length; i += 1) {
+    if (isLoraTokenChar[i]) {
+      continue;
+    }
+    if (isComment[i]) {
+      continue;
+    }
+
+    const ch = text[i];
+    const next = text[i + 1];
+    const inActiveRange = activeRange ? i >= activeRange.start && i <= activeRange.end : false;
+    const inVariantActiveRange = variantActiveRange
+      ? i >= variantActiveRange.start && i <= variantActiveRange.end
+      : false;
+
+    if (ch === "<" && next === "<") {
+      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
+      markClass(i, variantClass);
+      markClass(i + 1, variantClass);
+      variantDepth += 1;
+      variantNegativeStack.push(false);
+      i += 1;
+      continue;
+    }
+    if (ch === ">" && next === ">") {
+      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
+      markClass(i, variantClass);
+      markClass(i + 1, variantClass);
+      if (variantDepth > 0) {
+        variantDepth -= 1;
+      }
+      if (variantNegativeStack.length > 0) {
+        variantNegativeStack.pop();
+      }
+      i += 1;
+      continue;
+    }
+    if (ch === "|" && next === "|" && variantDepth > 0) {
+      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
+      markClass(i, variantClass);
+      markClass(i + 1, variantClass);
+      if (variantNegativeStack.length > 0) {
+        variantNegativeStack[variantNegativeStack.length - 1] = false;
+      }
+      i += 1;
+      continue;
+    }
+
+    if (ch === "!" && next === ">") {
+      const markerActive = inActiveRange || inVariantActiveRange;
+      const markerClass = markerActive ? "ess-tpl-negative-marker-active" : "ess-tpl-negative-marker";
+      markClass(i, markerClass);
+      markClass(i + 1, markerClass);
+      if (variantDepth === 0 && stack.length > 0) {
+        const frame = stack[stack.length - 1];
+        if (!frame.negative) {
+          frame.negative = true;
+          negativeDepthCount += 1;
+        }
+      }
+      if (variantDepth > 0 && variantNegativeStack.length > 0) {
+        variantNegativeStack[variantNegativeStack.length - 1] = true;
+      }
+      i += 1;
+      continue;
+    }
+
+    if (ch === "{") {
+      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
+      markClass(i, choiceClass);
+      stack.push({ negative: false });
+      continue;
+    }
+    if (ch === "}") {
+      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
+      markClass(i, choiceClass);
+      const frame = stack.pop();
+      if (frame?.negative) {
+        negativeDepthCount -= 1;
+      }
+      continue;
+    }
+    if (ch === "|") {
+      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
+      markClass(i, choiceClass);
+      if (stack.length > 0) {
+        const frame = stack[stack.length - 1];
+        if (frame.negative) {
+          frame.negative = false;
+          negativeDepthCount -= 1;
+        }
+      }
+      continue;
+    }
+    if (ch === "[") {
+      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
+      markClass(i, headerClass);
+      bracketDepth += 1;
+      continue;
+    }
+    if (ch === "]") {
+      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
+      markClass(i, headerClass);
+      if (bracketDepth > 0) {
+        bracketDepth -= 1;
+      }
+      continue;
+    }
+    if (ch === ":" && bracketDepth > 0) {
+      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
+      markClass(i, headerClass);
+      continue;
+    }
+
+    const headerType = headerTypes[i];
+    if (headerType) {
+      const headerClass = inActiveRange
+        ? (headerType === "number" ? "ess-tpl-header-number-active" : "ess-tpl-header-name-active")
+        : (headerType === "number" ? "ess-tpl-header-number" : "ess-tpl-header-name");
+      classSets[i].add(headerClass);
+      isSpecial[i] = true;
+    }
+
+    if (variantLabelIndices.has(i)) {
+      const labelClass = inVariantActiveRange ? "ess-tpl-variant-label-active" : "ess-tpl-variant-label";
+      classSets[i].add(labelClass);
+      isSpecial[i] = true;
+    }
+
+    const variantNegativeActive = variantNegativeStack.length > 0
+      && variantNegativeStack[variantNegativeStack.length - 1];
+    if ((negativeDepthCount > 0 || variantNegativeActive) && !isSpecial[i]) {
+      classSets[i].add("ess-tpl-negative-text");
+    }
+  }
+
+  let html = "";
+  for (let i = 0; i < length; i += 1) {
+    const loraToken = loraTokenByStart.get(i);
+    if (loraToken) {
+      const isActive = caret > loraToken.start && caret < loraToken.end;
+      const classes = ["ess-tpl-lora-token"];
+      if (isActive) classes.push("ess-tpl-lora-token-active");
+      if (!loraToken.valid || !loraToken.known) classes.push("ess-tpl-lora-token-invalid");
+      const ghostText = loraToken.raw;
+      const chipLabel = getLoraChipLabel(loraToken);
+      html += `<span class="${classes.join(" ")}"><span class="ess-tpl-lora-token-ghost">${escapeHtml(ghostText)}</span><span class="ess-tpl-lora-token-label">${escapeHtml(chipLabel)}</span></span>`;
+      i = loraToken.end - 1;
+      continue;
+    }
+    const ch = text[i];
+    const escaped = escapeHtml(ch);
+    let classes;
+    if (isComment[i]) {
+      classes = ["ess-tpl-comment"];
+    } else {
+      classes = Array.from(classSets[i]);
+    }
+    if (!classes.length) {
+      html += escaped;
+      continue;
+    }
+    html += `<span class="${classes.join(" ")}">${escaped}</span>`;
+  }
+
+  return html || "";
+}

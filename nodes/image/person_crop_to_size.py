@@ -30,6 +30,9 @@ _DEFAULT_MODELS = (
     "yolov8m.pt",
     "yolov8l.pt",
     "yolov8x.pt",
+    "yolo11n-pose.pt",
+    "yolov8n-pose.pt",
+    "yolov8s-pose.pt",
 )
 
 
@@ -164,6 +167,14 @@ def _load_model(model_name: str, model_path: Optional[str], device: str) -> Any:
             continue
         _ULTRALYTICS_CACHE[cache_key] = model
         return model
+
+    if model_name and not model_path:
+        try:
+            model = YOLO(str(model_name))
+            _ULTRALYTICS_CACHE[cache_key] = model
+            return model
+        except Exception as exc:
+            errors.append(f"{model_name}: {exc}")
 
     available = ', '.join(_list_ultralytics_models())
     detail = '; '.join(errors) if errors else 'no additional information'

@@ -1,7 +1,10 @@
 import { app } from "../../scripts/app.js";
+import { renderHighlight } from "./ess_template_highlight.js";
+import { installLoraTokenController } from "./ess_lora_token_editor.js";
 
 const STYLE_ID = "ess-template-editor-style";
 const MIN_EDITOR_HEIGHT = 160;
+const DICT_INPUT_NAMES = new Set(["replace_dict", "replacements_dict", "input_dict"]);
 
 function ensureStyles() {
   const existing = document.getElementById(STYLE_ID);
@@ -112,6 +115,23 @@ function ensureStyles() {
   color: #7dd3fc;
   font-weight: 700;
 }
+.ess-template-editor .ess-tpl-placeholder-unknown {
+  color: #38bdf8;
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: #f87171;
+  text-decoration-thickness: 1.2px;
+  text-underline-offset: 2px;
+}
+.ess-template-editor .ess-tpl-placeholder-unknown-active {
+  color: #7dd3fc;
+  font-weight: 700;
+  text-decoration-line: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: #fca5a5;
+  text-decoration-thickness: 1.4px;
+  text-underline-offset: 2px;
+}
 `;
   if (existing) {
     existing.textContent = css;
@@ -123,546 +143,6 @@ function ensureStyles() {
   document.head.appendChild(style);
 }
 
-function escapeHtml(text) {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
-
-function buildPairs(text) {
-  const pairs = new Map();
-  const reverse = new Map();
-  const stack = [];
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i];
-    if (ch === "{") {
-      stack.push(i);
-    } else if (ch === "}") {
-      if (stack.length > 0) {
-        const open = stack.pop();
-        pairs.set(open, i);
-        reverse.set(i, open);
-      }
-    }
-  }
-  return { pairs, reverse };
-}
-
-function findActiveScope(text, caret, pairs, reverse) {
-  if (caret > 0) {
-    const prev = text[caret - 1];
-    if (prev === "{" && pairs.has(caret - 1)) {
-      return { open: caret - 1, close: pairs.get(caret - 1) };
-    }
-    if (prev === "}" && reverse.has(caret - 1)) {
-      const open = reverse.get(caret - 1);
-      return { open, close: caret - 1 };
-    }
-  }
-  if (caret < text.length) {
-    const curr = text[caret];
-    if (curr === "{" && pairs.has(caret)) {
-      return { open: caret, close: pairs.get(caret) };
-    }
-    if (curr === "}" && reverse.has(caret)) {
-      const open = reverse.get(caret);
-      return { open, close: caret };
-    }
-  }
-
-  const stack = [];
-  for (let i = 0; i < caret; i += 1) {
-    const ch = text[i];
-    if (ch === "{") {
-      stack.push(i);
-    } else if (ch === "}" && stack.length > 0) {
-      stack.pop();
-    }
-  }
-  if (stack.length === 0) {
-    return null;
-  }
-  const open = stack[stack.length - 1];
-  const close = pairs.get(open);
-  if (close == null) {
-    return null;
-  }
-  return { open, close };
-}
-
-function collectScopeTokens(text, open, close) {
-  const active = new Set();
-  active.add(open);
-  active.add(close);
-  let depth = 0;
-  for (let i = open + 1; i < close; i += 1) {
-    const ch = text[i];
-    if (ch === "{") {
-      depth += 1;
-    } else if (ch === "}") {
-      if (depth > 0) {
-        depth -= 1;
-      }
-    } else if (ch === "|" && depth === 0) {
-      active.add(i);
-    }
-  }
-  return active;
-}
-
-function buildVariantPairs(text) {
-  const pairs = new Map();
-  const reverse = new Map();
-  const stack = [];
-  for (let i = 0; i < text.length - 1; i += 1) {
-    const pair = text.slice(i, i + 2);
-    if (pair === "<<") {
-      stack.push(i);
-      i += 1;
-      continue;
-    }
-    if (pair === ">>") {
-      if (stack.length > 0) {
-        const open = stack.pop();
-        pairs.set(open, i);
-        reverse.set(i, open);
-      }
-      i += 1;
-    }
-  }
-  return { pairs, reverse };
-}
-
-function findActiveVariantScope(text, caret, pairs, reverse) {
-  if (caret >= 2) {
-    const prevPair = text.slice(caret - 2, caret);
-    if (prevPair === "<<" && pairs.has(caret - 2)) {
-      return { open: caret - 2, close: pairs.get(caret - 2) };
-    }
-    if (prevPair === ">>" && reverse.has(caret - 2)) {
-      const open = reverse.get(caret - 2);
-      return { open, close: caret - 2 };
-    }
-  }
-  if (caret < text.length - 1) {
-    const currPair = text.slice(caret, caret + 2);
-    if (currPair === "<<" && pairs.has(caret)) {
-      return { open: caret, close: pairs.get(caret) };
-    }
-    if (currPair === ">>" && reverse.has(caret)) {
-      const open = reverse.get(caret);
-      return { open, close: caret };
-    }
-  }
-
-  const stack = [];
-  for (let i = 0; i < caret - 1; i += 1) {
-    const pair = text.slice(i, i + 2);
-    if (pair === "<<") {
-      stack.push(i);
-      i += 1;
-      continue;
-    }
-    if (pair === ">>" && stack.length > 0) {
-      stack.pop();
-      i += 1;
-      continue;
-    }
-  }
-  if (stack.length === 0) {
-    return null;
-  }
-  const open = stack[stack.length - 1];
-  const close = pairs.get(open);
-  if (close == null) {
-    return null;
-  }
-  return { open, close };
-}
-
-function collectVariantTokens(text, open, close) {
-  const active = new Set();
-  active.add(open);
-  active.add(open + 1);
-  active.add(close);
-  active.add(close + 1);
-  let depth = 0;
-  for (let i = open + 2; i < close; i += 1) {
-    const pair = text.slice(i, i + 2);
-    if (pair === "<<") {
-      depth += 1;
-      i += 1;
-      continue;
-    }
-    if (pair === ">>") {
-      if (depth > 0) {
-        depth -= 1;
-      }
-      i += 1;
-      continue;
-    }
-    if (pair === "||" && depth === 0) {
-      active.add(i);
-      active.add(i + 1);
-      i += 1;
-    }
-  }
-  return active;
-}
-
-function collectVariantLabelIndices(text, pairs) {
-  const labelIndices = new Set();
-  const isVariantLetter = (ch) => ch >= "a" && ch <= "j";
-  for (const [open, close] of pairs.entries()) {
-    let depth = 0;
-    let i = open + 2;
-    let segmentStart = open + 2;
-
-    const markLabel = (start, end) => {
-      let j = start;
-      while (j < end && /\s/.test(text[j])) {
-        j += 1;
-      }
-
-      if (j >= end) {
-        return;
-      }
-
-      const colonIndex = text.indexOf(":", j);
-      if (colonIndex === -1 || colonIndex >= end) {
-        return;
-      }
-
-      const rawPrefix = text.slice(j, colonIndex);
-      const prefix = rawPrefix.trim();
-      if (!prefix) {
-        return;
-      }
-
-      // Legacy single-label syntax: "a:"
-      if (prefix.length === 1 && isVariantLetter(prefix)) {
-        for (let k = j; k <= colonIndex; k += 1) {
-          const ch = text[k];
-          if (isVariantLetter(ch) || ch === ":" || ch === ",") {
-            labelIndices.add(k);
-          }
-        }
-        return;
-      }
-
-      // Multi-label syntax: "a,b,c:"
-      if (!prefix.includes(",")) {
-        return;
-      }
-
-      const tokens = prefix
-        .split(",")
-        .map((token) => token.trim())
-        .filter((token) => token.length > 0);
-      const hasValidToken = tokens.some((token) => token.length === 1 && isVariantLetter(token));
-      if (!hasValidToken) {
-        return;
-      }
-
-      for (let k = j; k <= colonIndex; k += 1) {
-        const ch = text[k];
-        if (isVariantLetter(ch) || ch === "," || ch === ":") {
-          labelIndices.add(k);
-        }
-      }
-    };
-
-    while (i < close) {
-      const pair = text.slice(i, i + 2);
-      if (pair === "<<") {
-        depth += 1;
-        i += 2;
-        continue;
-      }
-      if (pair === ">>") {
-        if (depth > 0) {
-          depth -= 1;
-        }
-        i += 2;
-        continue;
-      }
-      if (pair === "||" && depth === 0) {
-        markLabel(segmentStart, i);
-        segmentStart = i + 2;
-        i += 2;
-        continue;
-      }
-      i += 1;
-    }
-    markLabel(segmentStart, close);
-  }
-  return labelIndices;
-}
-
-function renderHighlight(text, caret) {
-  const { pairs, reverse } = buildPairs(text);
-  const activeScope = findActiveScope(text, caret, pairs, reverse);
-  const activeSet = activeScope ? collectScopeTokens(text, activeScope.open, activeScope.close) : new Set();
-  const activeRange = activeScope ? { start: activeScope.open, end: activeScope.close } : null;
-
-  const { pairs: variantPairs, reverse: variantReverse } = buildVariantPairs(text);
-  const variantScope = findActiveVariantScope(text, caret, variantPairs, variantReverse);
-  const variantActiveSet = variantScope ? collectVariantTokens(text, variantScope.open, variantScope.close) : new Set();
-  const variantActiveRange = variantScope
-    ? { start: variantScope.open, end: variantScope.close + 1 }
-    : null;
-  const variantLabelIndices = collectVariantLabelIndices(text, variantPairs);
-
-  const length = text.length;
-  const classSets = Array.from({ length }, () => new Set());
-  const isComment = new Array(length).fill(false);
-  const isSpecial = new Array(length).fill(false);
-  const headerTypes = new Array(length).fill(null);
-
-  const markClass = (index, className) => {
-    if (index < 0 || index >= length) {
-      return;
-    }
-    classSets[index].add(className);
-    isSpecial[index] = true;
-  };
-
-  // Mark comment ranges: start with #, terminate on newline or special symbols or another #
-  let inComment = false;
-  for (let i = 0; i < length; i += 1) {
-    const ch = text[i];
-    if (inComment) {
-      if (ch === "#") {
-        isComment[i] = true;
-        inComment = false;
-        continue;
-      }
-      if (ch === "\n" || ch === "{" || ch === "}" || ch === "|" || ch === "[" || ch === "]" || ch === ":" || ch === "<" || ch === ">") {
-        inComment = false;
-        continue;
-      }
-      isComment[i] = true;
-      continue;
-    }
-    if (ch === "#") {
-      isComment[i] = true;
-      inComment = true;
-    }
-  }
-
-  // Mark %placeholder% tokens (no spaces inside).
-  for (let i = 0; i < length; i += 1) {
-    if (isComment[i] || text[i] !== "%") {
-      continue;
-    }
-    let j = i + 1;
-    while (j < length && text[j] !== "%" && !/\s/.test(text[j])) {
-      j += 1;
-    }
-    if (j < length && text[j] === "%" && j > i + 1) {
-      const active = caret >= i && caret <= j + 1;
-      const klass = active ? "ess-tpl-placeholder-active" : "ess-tpl-placeholder";
-      for (let k = i; k <= j; k += 1) {
-        classSets[k].add(klass);
-        isSpecial[k] = true;
-      }
-      i = j;
-    }
-  }
-
-  // Identify header name/number spans for coloring
-  for (let i = 0; i < length; i += 1) {
-    const ch = text[i];
-    if (ch !== "[") {
-      continue;
-    }
-    const close = text.indexOf("]", i + 1);
-    if (close === -1) {
-      break;
-    }
-    const headerContent = text.slice(i + 1, close);
-    const colonIndex = headerContent.indexOf(":");
-    if (colonIndex >= 0) {
-      const nameStart = i + 1;
-      const nameEnd = i + 1 + colonIndex;
-      const numStart = nameEnd + 1;
-      const numEnd = close;
-      for (let j = nameStart; j < nameEnd; j += 1) {
-        headerTypes[j] = "name";
-      }
-      for (let j = numStart; j < numEnd; j += 1) {
-        headerTypes[j] = "number";
-      }
-    } else {
-      const isNumber = /^\s*\d+(?:\.\d+)?\s*$/.test(headerContent);
-      const type = isNumber ? "number" : "name";
-      for (let j = i + 1; j < close; j += 1) {
-        headerTypes[j] = type;
-      }
-    }
-    i = close;
-  }
-
-  const stack = [];
-  let negativeDepthCount = 0;
-  let bracketDepth = 0;
-  let variantDepth = 0;
-  const variantNegativeStack = [];
-
-  for (let i = 0; i < length; i += 1) {
-    if (isComment[i]) {
-      continue;
-    }
-
-    const ch = text[i];
-    const next = text[i + 1];
-    const inActiveRange = activeRange ? i >= activeRange.start && i <= activeRange.end : false;
-    const inVariantActiveRange = variantActiveRange
-      ? i >= variantActiveRange.start && i <= variantActiveRange.end
-      : false;
-
-    if (ch === "<" && next === "<") {
-      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
-      markClass(i, variantClass);
-      markClass(i + 1, variantClass);
-      variantDepth += 1;
-      variantNegativeStack.push(false);
-      i += 1;
-      continue;
-    }
-    if (ch === ">" && next === ">") {
-      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
-      markClass(i, variantClass);
-      markClass(i + 1, variantClass);
-      if (variantDepth > 0) {
-        variantDepth -= 1;
-      }
-      if (variantNegativeStack.length > 0) {
-        variantNegativeStack.pop();
-      }
-      i += 1;
-      continue;
-    }
-    if (ch === "|" && next === "|" && variantDepth > 0) {
-      const variantClass = variantActiveSet.has(i) ? "ess-tpl-variant-active" : "ess-tpl-variant";
-      markClass(i, variantClass);
-      markClass(i + 1, variantClass);
-      if (variantNegativeStack.length > 0) {
-        variantNegativeStack[variantNegativeStack.length - 1] = false;
-      }
-      i += 1;
-      continue;
-    }
-
-    if (ch === "!" && next === ">") {
-      const markerActive = inActiveRange || inVariantActiveRange;
-      const markerClass = markerActive ? "ess-tpl-negative-marker-active" : "ess-tpl-negative-marker";
-      markClass(i, markerClass);
-      markClass(i + 1, markerClass);
-      if (variantDepth === 0 && stack.length > 0) {
-        const frame = stack[stack.length - 1];
-        if (!frame.negative) {
-          frame.negative = true;
-          negativeDepthCount += 1;
-        }
-      }
-      if (variantDepth > 0 && variantNegativeStack.length > 0) {
-        variantNegativeStack[variantNegativeStack.length - 1] = true;
-      }
-      i += 1;
-      continue;
-    }
-
-    if (ch === "{") {
-      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
-      markClass(i, choiceClass);
-      stack.push({ negative: false });
-      continue;
-    }
-    if (ch === "}") {
-      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
-      markClass(i, choiceClass);
-      const frame = stack.pop();
-      if (frame?.negative) {
-        negativeDepthCount -= 1;
-      }
-      continue;
-    }
-    if (ch === "|") {
-      const choiceClass = activeSet.has(i) ? "ess-tpl-choice-active" : "ess-tpl-choice";
-      markClass(i, choiceClass);
-      if (stack.length > 0) {
-        const frame = stack[stack.length - 1];
-        if (frame.negative) {
-          frame.negative = false;
-          negativeDepthCount -= 1;
-        }
-      }
-      continue;
-    }
-    if (ch === "[") {
-      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
-      markClass(i, headerClass);
-      bracketDepth += 1;
-      continue;
-    }
-    if (ch === "]") {
-      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
-      markClass(i, headerClass);
-      if (bracketDepth > 0) {
-        bracketDepth -= 1;
-      }
-      continue;
-    }
-    if (ch === ":" && bracketDepth > 0) {
-      const headerClass = inActiveRange ? "ess-tpl-header-active" : "ess-tpl-header";
-      markClass(i, headerClass);
-      continue;
-    }
-
-    const headerType = headerTypes[i];
-    if (headerType) {
-      const headerClass = inActiveRange
-        ? (headerType === "number" ? "ess-tpl-header-number-active" : "ess-tpl-header-name-active")
-        : (headerType === "number" ? "ess-tpl-header-number" : "ess-tpl-header-name");
-      classSets[i].add(headerClass);
-      isSpecial[i] = true;
-    }
-
-    if (variantLabelIndices.has(i)) {
-      const labelClass = inVariantActiveRange ? "ess-tpl-variant-label-active" : "ess-tpl-variant-label";
-      classSets[i].add(labelClass);
-      isSpecial[i] = true;
-    }
-
-    const variantNegativeActive = variantNegativeStack.length > 0
-      && variantNegativeStack[variantNegativeStack.length - 1];
-    if ((negativeDepthCount > 0 || variantNegativeActive) && !isSpecial[i]) {
-      classSets[i].add("ess-tpl-negative-text");
-    }
-  }
-
-  let html = "";
-  for (let i = 0; i < length; i += 1) {
-    const ch = text[i];
-    const escaped = escapeHtml(ch);
-    let classes;
-    if (isComment[i]) {
-      classes = ["ess-tpl-comment"];
-    } else {
-      classes = Array.from(classSets[i]);
-    }
-    if (!classes.length) {
-      html += escaped;
-      continue;
-    }
-    html += `<span class="${classes.join(" ")}">${escaped}</span>`;
-  }
-
-  return html || "";
-}
-
 function applyContainerVars(container, minHeight, maxHeight) {
   const safeMin = Number.isFinite(minHeight) ? Math.max(minHeight, MIN_EDITOR_HEIGHT) : MIN_EDITOR_HEIGHT;
   const safeMax = Number.isFinite(maxHeight) ? Math.max(safeMin, maxHeight) : 100000;
@@ -670,7 +150,183 @@ function applyContainerVars(container, minHeight, maxHeight) {
   container.style.setProperty("--comfy-widget-max-height", `${safeMax}`);
 }
 
-function createEditorElements(config, inputData) {
+function sameSet(a, b) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (a.size !== b.size) return false;
+  for (const value of a) {
+    if (!b.has(value)) return false;
+  }
+  return true;
+}
+
+function getGraphLinks(graph) {
+  return graph?.links || graph?._links || null;
+}
+
+function getLinkOriginId(link) {
+  if (!link) return null;
+  if (Array.isArray(link)) return link[1] ?? null;
+  return link.origin_id ?? null;
+}
+
+function getLinkOriginSlot(link) {
+  if (!link) return null;
+  if (Array.isArray(link)) return link[2] ?? null;
+  return link.origin_slot ?? null;
+}
+
+function getNodeById(graph, nodeId) {
+  if (!graph) return null;
+  if (typeof graph.getNodeById === "function") return graph.getNodeById(nodeId);
+  return graph?._nodes_by_id?.[nodeId] || null;
+}
+
+function isGroupRerouteNode(node) {
+  const type = String(node?.type || "");
+  const title = String(node?.title || "");
+  return type.includes("GroupReroute") || title.includes("Group Reroute");
+}
+
+function isLiteRerouteNode(node) {
+  const type = String(node?.type || "");
+  const title = String(node?.title || "");
+  return type === "Reroute" || title === "Reroute";
+}
+
+function resolveUpstreamNode(graph, link, depth = 0) {
+  if (!graph || !link || depth > 24) return null;
+  const links = getGraphLinks(graph);
+  const originId = getLinkOriginId(link);
+  const originNode = originId != null ? getNodeById(graph, originId) : null;
+  if (!originNode) return null;
+  const originSlot = originNode?.outputs?.[getLinkOriginSlot(link)];
+
+  if (isGroupRerouteNode(originNode)) {
+    const outputName = originSlot?.name || `output_${(getLinkOriginSlot(link) ?? 0) + 1}`;
+    const match = outputName.match(/output_(\d+)/);
+    const index = match ? Number(match[1]) : ((getLinkOriginSlot(link) ?? 0) + 1);
+    const inputName = `input_${index}`;
+    const inputSlot = originNode.inputs?.find((input) => input?.name === inputName);
+    const inputLinkId = inputSlot?.link != null
+      ? inputSlot.link
+      : (Array.isArray(inputSlot?.links) && inputSlot.links.length ? inputSlot.links[0] : null);
+    const upstreamLink = inputLinkId != null ? links?.[inputLinkId] : null;
+    if (upstreamLink) return resolveUpstreamNode(graph, upstreamLink, depth + 1);
+    return originNode;
+  }
+
+  if (isLiteRerouteNode(originNode)) {
+    const inputSlot = originNode.inputs?.[0];
+    const inputLinkId = inputSlot?.link != null
+      ? inputSlot.link
+      : (Array.isArray(inputSlot?.links) && inputSlot.links.length ? inputSlot.links[0] : null);
+    const upstreamLink = inputLinkId != null ? links?.[inputLinkId] : null;
+    if (upstreamLink) return resolveUpstreamNode(graph, upstreamLink, depth + 1);
+    return originNode;
+  }
+
+  return originNode;
+}
+
+function getInputLinkIds(inputSlot) {
+  const out = [];
+  if (inputSlot?.link != null) out.push(inputSlot.link);
+  if (Array.isArray(inputSlot?.links)) {
+    for (const id of inputSlot.links) {
+      if (id != null) out.push(id);
+    }
+  }
+  return Array.from(new Set(out));
+}
+
+function normalizeReplaceKey(raw) {
+  const key = String(raw || "").trim();
+  if (!key) return "";
+  if (key.includes("%")) return "";
+  if (/\s/.test(key)) return "";
+  return key;
+}
+
+function isReplaceDictNode(node) {
+  const type = String(node?.type || "");
+  const title = String(node?.title || "");
+  return type.includes("ReplaceDict") || title.includes("Replace Dict");
+}
+
+function parseReplaceRows(raw) {
+  try {
+    const parsed = JSON.parse(String(raw || "[]"));
+    if (!Array.isArray(parsed)) return [];
+    return parsed;
+  } catch {
+    return [];
+  }
+}
+
+function getWidgetValueByName(node, targetName) {
+  if (!Array.isArray(node?.widgets)) return "";
+  const idx = node.widgets.findIndex((w) => String(w?.name || "").trim() === targetName);
+  if (idx < 0) return "";
+  const widget = node.widgets[idx];
+  if (widget?.value != null) return widget.value;
+  if (Array.isArray(node.widgets_values) && node.widgets_values[idx] != null) return node.widgets_values[idx];
+  return "";
+}
+
+function collectKnownReplaceKeys(templateNode) {
+  const graph = templateNode?.graph;
+  if (!graph) return new Set();
+  const links = getGraphLinks(graph);
+  if (!links) return new Set();
+
+  const known = new Set();
+  const visitedNodes = new Set();
+
+  const walkFromNode = (node) => {
+    if (!node) return;
+    const nodeId = node.id != null ? String(node.id) : `${node.type}|${node.title}`;
+    if (visitedNodes.has(nodeId)) return;
+    visitedNodes.add(nodeId);
+
+    if (isReplaceDictNode(node)) {
+      const raw = getWidgetValueByName(node, "replacements_editor");
+      const rows = parseReplaceRows(raw);
+      for (const row of rows) {
+        const key = normalizeReplaceKey(row?.key);
+        if (key) known.add(key);
+      }
+    }
+
+    if (!Array.isArray(node.inputs)) return;
+    for (const input of node.inputs) {
+      const name = String(input?.name || "").trim().toLowerCase();
+      if (!DICT_INPUT_NAMES.has(name)) continue;
+      for (const linkId of getInputLinkIds(input)) {
+        const link = links?.[linkId];
+        const originId = getLinkOriginId(link);
+        if (!link || originId == null) continue;
+        const upstream = resolveUpstreamNode(graph, link) || getNodeById(graph, originId);
+        if (upstream) walkFromNode(upstream);
+      }
+    }
+  };
+
+  if (!Array.isArray(templateNode?.inputs)) return known;
+  for (const input of templateNode.inputs) {
+    const name = String(input?.name || "").trim().toLowerCase();
+    if (!DICT_INPUT_NAMES.has(name)) continue;
+    for (const linkId of getInputLinkIds(input)) {
+      const link = links?.[linkId];
+      const originId = getLinkOriginId(link);
+      if (!link || originId == null) continue;
+      walkFromNode(resolveUpstreamNode(graph, link) || getNodeById(graph, originId));
+    }
+  }
+  return known;
+}
+
+function createEditorElements(node, config, inputData) {
   const container = document.createElement("div");
   container.className = "ess-template-editor";
 
@@ -705,6 +361,16 @@ function createEditorElements(config, inputData) {
   };
 
   let raf = 0;
+  let knownPlaceholders = collectKnownReplaceKeys(node);
+  let loraController = null;
+  const refreshKnownPlaceholders = () => {
+    const next = collectKnownReplaceKeys(node);
+    if (!sameSet(knownPlaceholders, next)) {
+      knownPlaceholders = next;
+      scheduleRender();
+    }
+  };
+
   const scheduleRender = () => {
     if (raf) {
       cancelAnimationFrame(raf);
@@ -713,7 +379,8 @@ function createEditorElements(config, inputData) {
       raf = 0;
       syncSize();
       const caret = textarea.selectionStart || 0;
-      highlightContent.innerHTML = renderHighlight(textarea.value || "", caret);
+      const knownLoras = loraController?.getKnownLoras?.() || null;
+      highlightContent.innerHTML = renderHighlight(textarea.value || "", caret, { knownPlaceholders, knownLoras });
       syncScroll();
     });
   };
@@ -728,6 +395,10 @@ function createEditorElements(config, inputData) {
   textarea.addEventListener("pointermove", (event) => event.stopPropagation());
   textarea.addEventListener("pointerup", (event) => event.stopPropagation());
   textarea.addEventListener("contextmenu", (event) => event.stopPropagation());
+  loraController = installLoraTokenController(textarea, {
+    container,
+    requestRender: scheduleRender,
+  });
 
   container.appendChild(highlight);
   container.appendChild(textarea);
@@ -760,9 +431,27 @@ function createEditorElements(config, inputData) {
   };
 
   window.addEventListener("wheel", onWheelCapture, { capture: true, passive: false });
+  const onReplaceDictChanged = () => refreshKnownPlaceholders();
+  window.addEventListener("ess:replace-dict-changed", onReplaceDictChanged);
+
+  if (node && !node.__essTemplateOrigConnectionsChange) {
+    node.__essTemplateOrigConnectionsChange = node.onConnectionsChange;
+    node.onConnectionsChange = function () {
+      const result = node.__essTemplateOrigConnectionsChange
+        ? node.__essTemplateOrigConnectionsChange.apply(this, arguments)
+        : undefined;
+      this.__essTemplateRefreshKnown?.();
+      return result;
+    };
+  }
+  if (node) {
+    node.__essTemplateRefreshKnown = refreshKnownPlaceholders;
+  }
 
   const cleanup = () => {
     resizeObserver.disconnect();
+    window.removeEventListener("ess:replace-dict-changed", onReplaceDictChanged);
+    loraController?.destroy?.();
   };
 
   return { container, textarea, scheduleRender, onWheelCapture, cleanup };
@@ -780,7 +469,7 @@ app.registerExtension({
         const rawMaxHeight = Number(config.maxHeight);
         const maxHeight = Number.isFinite(rawMaxHeight) ? Math.max(minHeight, rawMaxHeight) : 100000;
 
-        const { container, textarea, scheduleRender, onWheelCapture, cleanup } = createEditorElements(config, inputData);
+        const { container, textarea, scheduleRender, onWheelCapture, cleanup } = createEditorElements(node, config, inputData);
         applyContainerVars(container, minHeight, maxHeight);
 
         if (typeof node.addDOMWidget === "function") {

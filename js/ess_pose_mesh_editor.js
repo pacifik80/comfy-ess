@@ -210,9 +210,9 @@ function createDefaultCameraSlots() {
     far: 3000,
     resolution: [1024, 768],
   };
-  return [0, 1, 2].map((idx) => ({
+  return [0].map((idx) => ({
     ...base,
-    name: `Cam ${idx + 1}`,
+    name: `Camera`,
   }));
 }
 
@@ -243,9 +243,9 @@ function normalizeCameraSlot(slot, fallbackName = "Cam") {
 function normalizeCameraSlots(slots) {
   const defaults = createDefaultCameraSlots();
   const out = [];
-  for (let i = 0; i < 3; i += 1) {
+  for (let i = 0; i < 1; i += 1) {
     const src = Array.isArray(slots) && slots[i] ? slots[i] : defaults[i];
-    out.push(normalizeCameraSlot(src, `Cam ${i + 1}`));
+    out.push(normalizeCameraSlot(src, "Camera"));
   }
   return out;
 }
@@ -876,6 +876,10 @@ function buildOverlay(node, widget, stateRef) {
   loadSceneBtn.className = "secondary";
   loadSceneBtn.textContent = "Load Scene";
 
+  const initFromImageBtn = document.createElement("button");
+  initFromImageBtn.className = "secondary";
+  initFromImageBtn.textContent = "Init From Image";
+
   topActions.append(
     updateNodeBtn,
     undoBtn,
@@ -884,6 +888,7 @@ function buildOverlay(node, widget, stateRef) {
     loadPoseBtn,
     saveSceneBtn,
     loadSceneBtn,
+    initFromImageBtn,
   );
 
   const topbarSpacer = document.createElement("span");
@@ -918,7 +923,7 @@ function buildOverlay(node, widget, stateRef) {
       card.style.gap = "10px";
 
       const title = document.createElement("div");
-      title.textContent = "Choose character from meshes/rigged";
+      title.textContent = "Choose character from meshes/human_rig";
       title.style.fontSize = "13px";
       title.style.color = "#d6e8ff";
 
@@ -1018,7 +1023,7 @@ function buildOverlay(node, widget, stateRef) {
   cameraBar.style.background = "#0f131b";
 
   const cameraTabsWrap = document.createElement("div");
-  cameraTabsWrap.style.display = "flex";
+  cameraTabsWrap.style.display = "none";
   cameraTabsWrap.style.gap = "6px";
 
   const camResolutionWrap = document.createElement("div");
@@ -1059,7 +1064,7 @@ function buildOverlay(node, widget, stateRef) {
   camHeightInput.style.padding = "3px 6px";
   camResolutionWrap.append(camResolutionLabel, camWidthInput, camMul, camHeightInput);
 
-  cameraBar.append(cameraTabsWrap, camResolutionWrap);
+  cameraBar.append(camResolutionWrap);
   const viewport = document.createElement("div");
   viewport.className = "ess-pose-viewport";
   viewport.style.flex = "1";
@@ -1191,7 +1196,7 @@ function buildOverlay(node, widget, stateRef) {
   let historyTimer = null;
   const HISTORY_LIMIT = 30;
   let cameraSlots = normalizeCameraSlots(sharedSession.cameraSlots);
-  let activeCameraIndex = Math.max(0, Math.min(2, Number(sharedSession.activeCameraIndex || 0)));
+  let activeCameraIndex = 0;
 
   const layoutRendererToFrame = () => {
     if (!renderer || !camera) return;
@@ -1238,19 +1243,19 @@ function buildOverlay(node, widget, stateRef) {
     if (!Array.isArray(cameraSlots) || !cameraSlots.length) {
       cameraSlots = normalizeCameraSlots(null);
     }
-    const idx = Math.max(0, Math.min(2, Number(activeCameraIndex || 0)));
+    const idx = 0;
     return cameraSlots[idx] || cameraSlots[0];
   }
 
   function persistCameraSlotsToSession() {
     sharedSession.cameraSlots = cameraSlots;
-    sharedSession.activeCameraIndex = activeCameraIndex;
+    sharedSession.activeCameraIndex = 0;
   }
 
   function readCurrentCameraToSlot(idx = activeCameraIndex) {
     if (!camera || !orbit || !Array.isArray(cameraSlots)) return;
-    const index = Math.max(0, Math.min(2, Number(idx || 0)));
-    const slot = normalizeCameraSlot(cameraSlots[index], `Cam ${index + 1}`);
+    const index = 0;
+    const slot = normalizeCameraSlot(cameraSlots[index], "Camera");
     slot.fov = Number(camera.fov);
     slot.position = camera.position.toArray();
     slot.target = orbit.target.toArray();
@@ -1279,8 +1284,8 @@ function buildOverlay(node, widget, stateRef) {
 
   function applySlotToCamera(idx = activeCameraIndex) {
     if (!camera || !orbit || !Array.isArray(cameraSlots)) return;
-    const index = Math.max(0, Math.min(2, Number(idx || 0)));
-    const slot = normalizeCameraSlot(cameraSlots[index], `Cam ${index + 1}`);
+    const index = 0;
+    const slot = normalizeCameraSlot(cameraSlots[index], "Camera");
     cameraSlots[index] = slot;
     activeCameraIndex = index;
     setCameraFromSlot(slot);
@@ -1311,13 +1316,7 @@ function buildOverlay(node, widget, stateRef) {
   }
 
   function refreshCameraTabs() {
-    Array.from(cameraTabsWrap.querySelectorAll("button[data-cam-idx]")).forEach((btn) => {
-      const idx = Number(btn.dataset.camIdx || 0);
-      const active = idx === activeCameraIndex;
-      btn.style.background = active ? "#29456a" : "#1a2230";
-      btn.style.color = active ? "#eaf2ff" : "#c5d4eb";
-      btn.style.borderColor = active ? "#4d78aa" : "#2a303b";
-    });
+    return;
   }
 
   function syncResolutionInputsFromSlot() {
@@ -1341,27 +1340,8 @@ function buildOverlay(node, widget, stateRef) {
   }
 
   function buildCameraTabs() {
-    cameraTabsWrap.innerHTML = "";
     cameraSlots = normalizeCameraSlots(cameraSlots);
-    cameraSlots.forEach((slot, idx) => {
-      const btn = document.createElement("button");
-      btn.dataset.camIdx = String(idx);
-      btn.textContent = slot.name || `Cam ${idx + 1}`;
-      btn.className = "secondary";
-      btn.style.border = "1px solid #2a303b";
-      btn.style.borderRadius = "4px";
-      btn.style.padding = "4px 8px";
-      btn.style.cursor = "pointer";
-      btn.addEventListener("click", () => {
-        readCurrentCameraToSlot(activeCameraIndex);
-        applySlotToCamera(idx);
-        syncResolutionInputsFromSlot();
-        refreshCameraTabs();
-        scheduleHistoryCapture(120);
-      });
-      cameraTabsWrap.appendChild(btn);
-    });
-    refreshCameraTabs();
+    activeCameraIndex = 0;
     syncResolutionInputsFromSlot();
     persistCameraSlotsToSession();
   }
@@ -1412,6 +1392,527 @@ function buildOverlay(node, widget, stateRef) {
       document.body.appendChild(input);
       input.click();
     });
+  }
+
+  function pickImageFileAsDataUrl() {
+    return new Promise((resolve) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/png,image/jpeg,image/webp,image/bmp";
+      input.style.display = "none";
+      let settled = false;
+      const settle = (value) => {
+        if (settled) return;
+        settled = true;
+        try {
+          window.removeEventListener("focus", onWindowFocus);
+        } catch (_err) {}
+        input.remove();
+        resolve(value);
+      };
+      const onWindowFocus = () => {
+        // Desktop/Electron can close file dialog without firing "change".
+        setTimeout(() => {
+          if (!settled && !(input.files && input.files.length > 0)) {
+            settle(null);
+          }
+        }, 180);
+      };
+      window.addEventListener("focus", onWindowFocus);
+      input.addEventListener("cancel", () => settle(null));
+      input.addEventListener("change", async () => {
+        try {
+          const file = input.files?.[0];
+          if (!file) {
+            settle(null);
+            return;
+          }
+          const dataUrl = await new Promise((ok, fail) => {
+            const reader = new FileReader();
+            reader.onload = () => ok(String(reader.result || ""));
+            reader.onerror = (err) => fail(err);
+            reader.readAsDataURL(file);
+          });
+          settle({
+            name: String(file.name || "image"),
+            dataUrl,
+          });
+        } catch (err) {
+          setStatus(`Failed to read image: ${err?.message || err}`);
+          settle(null);
+        }
+      });
+      document.body.appendChild(input);
+      input.click();
+    });
+  }
+
+  async function requestPoseInitFromImage(imageDataUrl, requestId = null) {
+    const rid = String(requestId || `ess_pose_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`);
+    const payload = {
+      image_base64: String(imageDataUrl || ""),
+      confidence: 0.2,
+      mode: "advanced",
+      request_id: rid,
+    };
+    const response = await fetch("/ess/pose/init_from_image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    let data = {};
+    try {
+      data = await response.json();
+    } catch (_err) {
+      data = {};
+    }
+    if (!response.ok || !data?.ok) {
+      const errorText = data?.error || `HTTP ${response.status}`;
+      throw new Error(errorText);
+    }
+    return {
+      ...data,
+      request_id: String(data?.request_id || rid),
+    };
+  }
+
+  async function fetchPoseInitProgress(requestId) {
+    const rid = String(requestId || "");
+    if (!rid) return null;
+    const response = await fetch(`/ess/pose/init_progress?request_id=${encodeURIComponent(rid)}`, {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      return null;
+    }
+    try {
+      return await response.json();
+    } catch (_err) {
+      return null;
+    }
+  }
+
+  function renderModelStructurePreview(payload, size = 720) {
+    const persons = Array.isArray(payload?.persons) ? payload.persons : [];
+    const imageW = Math.max(1, Number(payload?.image_width || persons[0]?.image_width || 1024));
+    const imageH = Math.max(1, Number(payload?.image_height || persons[0]?.image_height || 1024));
+    const canvas = document.createElement("canvas");
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    ctx.fillStyle = "#020817";
+    ctx.fillRect(0, 0, size, size);
+
+    const pad = 24;
+    const fitScale = Math.min((size - pad * 2) / imageW, (size - pad * 2) / imageH);
+    const drawW = imageW * fitScale;
+    const drawH = imageH * fitScale;
+    const offX = (size - drawW) * 0.5;
+    const offY = (size - drawH) * 0.5;
+
+    ctx.fillStyle = "#061227";
+    ctx.fillRect(offX, offY, drawW, drawH);
+    ctx.strokeStyle = "rgba(96, 165, 250, 0.28)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(offX, offY, drawW, drawH);
+
+    const toCanvas = (x, y) => ({
+      x: offX + (Number(x) / imageW) * drawW,
+      y: offY + (Number(y) / imageH) * drawH,
+    });
+
+    const getNamedUv = (person, name) => {
+      const entry = person?.joints3d_named?.[name];
+      if (!entry) return null;
+      const u = Number(entry.u);
+      const v = Number(entry.v);
+      if (!Number.isFinite(u) || !Number.isFinite(v)) return null;
+      return toCanvas(u, v);
+    };
+
+    const connections = [
+      ["head", "neck"],
+      ["neck", "left_shoulder"],
+      ["neck", "right_shoulder"],
+      ["left_shoulder", "left_elbow"],
+      ["left_elbow", "left_wrist"],
+      ["right_shoulder", "right_elbow"],
+      ["right_elbow", "right_wrist"],
+      ["neck", "pelvis"],
+      ["pelvis", "left_hip"],
+      ["pelvis", "right_hip"],
+      ["left_hip", "left_knee"],
+      ["left_knee", "left_ankle"],
+      ["right_hip", "right_knee"],
+      ["right_knee", "right_ankle"],
+      ["left_ankle", "left_foot"],
+      ["right_ankle", "right_foot"],
+    ];
+
+    const palettes = [
+      { line: "#22c55e", point: "#86efac", face: "#fbbf24", facePoint: "#f472b6" },
+      { line: "#60a5fa", point: "#93c5fd", face: "#f59e0b", facePoint: "#f472b6" },
+      { line: "#a78bfa", point: "#c4b5fd", face: "#fbbf24", facePoint: "#f472b6" },
+    ];
+
+    persons.forEach((person, idx) => {
+      const colors = palettes[idx % palettes.length];
+      const bbox = person?.bbox;
+      if (bbox) {
+        const p1 = toCanvas(Number(bbox.x1 || 0), Number(bbox.y1 || 0));
+        const p2 = toCanvas(Number(bbox.x2 || 0), Number(bbox.y2 || 0));
+        ctx.strokeStyle = colors.line;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+      }
+
+      ctx.strokeStyle = colors.line;
+      ctx.lineWidth = 3;
+      connections.forEach(([a, b]) => {
+        const p0 = getNamedUv(person, a);
+        const p1 = getNamedUv(person, b);
+        if (!p0 || !p1) return;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.lineTo(p1.x, p1.y);
+        ctx.stroke();
+      });
+
+      const pointNames = [
+        "head", "neck", "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
+        "left_wrist", "right_wrist", "pelvis", "left_hip", "right_hip",
+        "left_knee", "right_knee", "left_ankle", "right_ankle", "left_foot", "right_foot",
+      ];
+      ctx.fillStyle = colors.point;
+      pointNames.forEach((name) => {
+        const p = getNamedUv(person, name);
+        if (!p) return;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      const face = person?.face;
+      if (face?.bbox && Array.isArray(face.bbox) && face.bbox.length >= 4) {
+        const p1 = toCanvas(face.bbox[0], face.bbox[1]);
+        const p2 = toCanvas(face.bbox[2], face.bbox[3]);
+        ctx.strokeStyle = colors.face;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+      }
+      if (Array.isArray(face?.kps)) {
+        ctx.fillStyle = colors.facePoint;
+        face.kps.forEach((pt) => {
+          if (!Array.isArray(pt) || pt.length < 2) return;
+          const p = toCanvas(Number(pt[0]), Number(pt[1]));
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+    });
+
+    return canvas.toDataURL("image/png");
+  }
+
+  function createInitProgressDialog(fileName) {
+    const shade = document.createElement("div");
+    shade.style.position = "absolute";
+    shade.style.inset = "0";
+    shade.style.background = "rgba(3, 8, 18, 0.72)";
+    shade.style.display = "flex";
+    shade.style.alignItems = "center";
+    shade.style.justifyContent = "center";
+    shade.style.zIndex = "10020";
+
+    const card = document.createElement("div");
+    card.style.width = "1480px";
+    card.style.maxWidth = "calc(100vw - 40px)";
+    card.style.maxHeight = "calc(100vh - 36px)";
+    card.style.background = "#061227";
+    card.style.border = "1px solid #24436f";
+    card.style.borderRadius = "12px";
+    card.style.boxShadow = "0 18px 48px rgba(0, 0, 0, 0.45)";
+    card.style.display = "flex";
+    card.style.flexDirection = "column";
+    card.style.overflow = "hidden";
+
+    const header = document.createElement("div");
+    header.style.padding = "14px 16px";
+    header.style.borderBottom = "1px solid rgba(96, 165, 250, 0.22)";
+    header.style.color = "#dbeafe";
+    header.style.fontSize = "20px";
+    header.style.fontWeight = "700";
+    header.textContent = "Init From Image";
+
+    const body = document.createElement("div");
+    body.style.padding = "16px";
+    body.style.display = "flex";
+    body.style.flexDirection = "column";
+    body.style.gap = "12px";
+    body.style.minHeight = "0";
+
+    const intro = document.createElement("div");
+    intro.style.color = "#cbd5e1";
+    intro.style.fontSize = "14px";
+    intro.textContent = `Processing ${String(fileName || "image")}`;
+
+    const statusBox = document.createElement("div");
+    statusBox.style.background = "#020817";
+    statusBox.style.border = "1px solid #27466f";
+    statusBox.style.borderRadius = "10px";
+    statusBox.style.padding = "14px";
+    statusBox.style.color = "#e2e8f0";
+    statusBox.style.fontSize = "16px";
+    statusBox.style.minHeight = "56px";
+    statusBox.style.display = "flex";
+    statusBox.style.alignItems = "center";
+    statusBox.textContent = "Preparing request";
+
+    const hint = document.createElement("div");
+    hint.style.color = "#93c5fd";
+    hint.style.fontSize = "13px";
+    hint.textContent = "First run may take several minutes while repos and model weights are downloaded.";
+
+    const elapsed = document.createElement("div");
+    elapsed.style.color = "#94a3b8";
+    elapsed.style.fontSize = "12px";
+    elapsed.textContent = "Elapsed: 0s";
+
+    const previewWrap = document.createElement("div");
+    previewWrap.style.display = "flex";
+    previewWrap.style.flexDirection = "column";
+    previewWrap.style.gap = "8px";
+    previewWrap.style.minHeight = "0";
+
+    const previewLabel = document.createElement("div");
+    previewLabel.style.color = "#dbeafe";
+    previewLabel.style.fontSize = "13px";
+    previewLabel.textContent = "Preview";
+
+    const previewGrid = document.createElement("div");
+    previewGrid.style.display = "grid";
+    previewGrid.style.gridTemplateColumns = "repeat(3, minmax(0, 1fr))";
+    previewGrid.style.gap = "12px";
+
+    const makePreviewPane = (labelText, altText) => {
+      const wrap = document.createElement("div");
+      wrap.style.display = "flex";
+      wrap.style.flexDirection = "column";
+      wrap.style.gap = "6px";
+      wrap.style.minHeight = "0";
+
+      const label = document.createElement("div");
+      label.style.color = "#93c5fd";
+      label.style.fontSize = "12px";
+      label.textContent = labelText;
+
+      const box = document.createElement("div");
+      box.style.background = "#020817";
+      box.style.border = "1px solid #27466f";
+      box.style.borderRadius = "10px";
+      box.style.padding = "10px";
+      box.style.aspectRatio = "1 / 1";
+      box.style.display = "flex";
+      box.style.alignItems = "center";
+      box.style.justifyContent = "center";
+      box.style.overflow = "hidden";
+      box.style.minWidth = "0";
+
+      const image = document.createElement("img");
+      image.style.width = "100%";
+      image.style.height = "100%";
+      image.style.objectFit = "contain";
+      image.style.borderRadius = "6px";
+      image.alt = altText;
+      box.appendChild(image);
+      wrap.append(label, box);
+      return { wrap, image };
+    };
+
+    const sourcePane = makePreviewPane("Source", "Source preview");
+    const modelPane = makePreviewPane("Model", "Model structure preview");
+    const resultPane = makePreviewPane("Result", "Result preview");
+    modelPane.image.style.opacity = "0.35";
+    resultPane.image.style.opacity = "0.35";
+    previewGrid.append(sourcePane.wrap, modelPane.wrap, resultPane.wrap);
+    previewWrap.append(previewLabel, previewGrid);
+
+    const logWrap = document.createElement("div");
+    logWrap.style.display = "flex";
+    logWrap.style.flexDirection = "column";
+    logWrap.style.gap = "8px";
+    logWrap.style.minHeight = "0";
+
+    const logLabel = document.createElement("div");
+    logLabel.style.color = "#dbeafe";
+    logLabel.style.fontSize = "13px";
+    logLabel.textContent = "Log";
+
+    const logBox = document.createElement("div");
+    logBox.style.background = "#020817";
+    logBox.style.border = "1px solid #27466f";
+    logBox.style.borderRadius = "10px";
+    logBox.style.padding = "10px";
+    logBox.style.minHeight = "140px";
+    logBox.style.maxHeight = "220px";
+    logBox.style.overflow = "auto";
+    logBox.style.color = "#cbd5e1";
+    logBox.style.fontSize = "12px";
+    logBox.style.fontFamily = "ui-monospace, SFMono-Regular, Menlo, monospace";
+    logBox.style.whiteSpace = "pre-wrap";
+
+    logWrap.append(logLabel, logBox);
+
+    const errorBox = document.createElement("div");
+    errorBox.style.display = "none";
+    errorBox.style.background = "rgba(127, 29, 29, 0.22)";
+    errorBox.style.border = "1px solid rgba(248, 113, 113, 0.35)";
+    errorBox.style.borderRadius = "10px";
+    errorBox.style.padding = "12px";
+    errorBox.style.color = "#fecaca";
+    errorBox.style.fontSize = "13px";
+    errorBox.style.whiteSpace = "pre-wrap";
+
+    const footer = document.createElement("div");
+    footer.style.display = "flex";
+    footer.style.justifyContent = "flex-end";
+    footer.style.gap = "8px";
+    footer.style.padding = "0 16px 16px";
+
+    const finish = document.createElement("button");
+    finish.className = "save";
+    finish.textContent = "Finish";
+    finish.disabled = true;
+
+    footer.append(finish);
+    body.append(intro, statusBox, hint, elapsed, previewWrap, logWrap, errorBox);
+    card.append(header, body, footer);
+    shade.appendChild(card);
+    overlay.appendChild(shade);
+
+    const startedAt = Date.now();
+    let removed = false;
+    let elapsedTimer = null;
+    let pollTimer = null;
+
+    const stopTimers = () => {
+      if (elapsedTimer) {
+        clearInterval(elapsedTimer);
+        elapsedTimer = null;
+      }
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+
+    const remove = () => {
+      if (removed) return;
+      removed = true;
+      stopTimers();
+      shade.remove();
+    };
+
+    finish.addEventListener("click", () => remove());
+
+    elapsedTimer = setInterval(() => {
+      const sec = Math.max(0, Math.round((Date.now() - startedAt) / 1000));
+      elapsed.textContent = `Elapsed: ${sec}s`;
+    }, 500);
+
+    const seenLogs = new Set();
+
+    const appendLogs = (logs) => {
+      if (!Array.isArray(logs)) return;
+      logs.forEach((entry) => {
+        const text = String(entry || "").trim();
+        if (!text || seenLogs.has(text)) return;
+        seenLogs.add(text);
+        const line = document.createElement("div");
+        line.textContent = text;
+        logBox.appendChild(line);
+      });
+      logBox.scrollTop = logBox.scrollHeight;
+    };
+
+    return {
+      setSourceImage(src) {
+        const value = String(src || "");
+        if (value) {
+          sourcePane.image.src = value;
+        }
+      },
+      setResultImage(src) {
+        const value = String(src || "");
+        if (value) {
+          resultPane.image.src = value;
+          resultPane.image.style.opacity = "1";
+        }
+      },
+      setModelImage(src) {
+        const value = String(src || "");
+        if (value) {
+          modelPane.image.src = value;
+          modelPane.image.style.opacity = "1";
+        }
+      },
+      setStage(message) {
+        statusBox.textContent = String(message || "Working");
+      },
+      appendLogs,
+      applyProgress(progress) {
+        if (!progress || progress.ok === false) return;
+        const stage = String(progress.stage || "");
+        if (stage) {
+          statusBox.textContent = stage;
+        }
+        if (progress.preview_image_base64) {
+          sourcePane.image.src = String(progress.preview_image_base64);
+        }
+        appendLogs(progress.logs);
+        if (progress.error) {
+          errorBox.style.display = "";
+          errorBox.textContent = String(progress.error);
+          finish.disabled = false;
+        }
+        if (progress.done) {
+          stopTimers();
+          finish.disabled = false;
+        }
+      },
+      setError(message) {
+        errorBox.style.display = "";
+        errorBox.textContent = String(message || "Unknown error");
+        finish.disabled = false;
+      },
+      startPolling(requestId) {
+        const rid = String(requestId || "");
+        if (!rid) return;
+        const poll = async () => {
+          const progress = await fetchPoseInitProgress(rid);
+          if (!progress || progress.ok === false) return;
+          this.applyProgress(progress);
+        };
+        poll();
+        pollTimer = setInterval(poll, 900);
+      },
+      complete(message) {
+        stopTimers();
+        statusBox.textContent = String(message || "Completed");
+        finish.disabled = false;
+      },
+      fail(message) {
+        stopTimers();
+        statusBox.textContent = "Failed";
+        errorBox.style.display = "";
+        errorBox.textContent = String(message || "Unknown error");
+        finish.disabled = false;
+      },
+      remove,
+    };
   }
 
   function updateHistoryButtons() {
@@ -1561,6 +2062,1309 @@ function buildOverlay(node, widget, stateRef) {
         child.skeleton.update();
       }
     });
+  }
+
+  function getBoneForOpenPoseIndex(character, openPoseIndex) {
+    if (!character || !character.boneNameMap) return null;
+    const name = OPENPOSE_NAMES[openPoseIndex];
+    if (!name) return null;
+    return findBoneByAliases(character.boneNameMap, OPENPOSE_TO_BONE[name] || []);
+  }
+
+  function getFootDriveBones(character, side) {
+    if (!character?.boneNameMap) return { driveBone: null, endBone: null };
+    const sideKey = String(side || "").toLowerCase();
+    if (sideKey !== "left" && sideKey !== "right") {
+      return { driveBone: null, endBone: null };
+    }
+    const title = sideKey === "left" ? "Left" : "Right";
+    const driveBone = findBoneByAliases(character.boneNameMap, [
+      `mixamorig${title}Foot`,
+      `${title}Foot`,
+    ]);
+    const endBone = findBoneByAliases(character.boneNameMap, [
+      `mixamorig${title}ToeBase`,
+      `${title}ToeBase`,
+      `mixamorig${title}Toe_End`,
+      `${title}Toe_End`,
+      `mixamorig${title}Toe`,
+      `${title}Toe`,
+    ]);
+    return { driveBone, endBone };
+  }
+
+  function getHeadDriveBones(character) {
+    if (!character?.boneNameMap) return { driveBone: null, endBone: null };
+    const driveBone = findBoneByAliases(character.boneNameMap, OPENPOSE_TO_BONE.Neck || []);
+    const endBone = findBoneByAliases(character.boneNameMap, [
+      "mixamorigHead",
+      "Head",
+      "mixamorigHeadTop_End",
+      "HeadTop_End",
+      "HeadTop",
+    ]);
+    return { driveBone, endBone };
+  }
+
+  function getCharacterOpenPoseWorld(character) {
+    const out = Array.from({ length: OPENPOSE_NAMES.length }, () => null);
+    if (!character || !three || !camera) return out;
+    OPENPOSE_NAMES.forEach((name, idx) => {
+      const bone = findBoneByAliases(character.boneNameMap, OPENPOSE_TO_BONE[name] || []);
+      if (!bone) return;
+      const p = new three.Vector3();
+      bone.getWorldPosition(p);
+      out[idx] = p;
+    });
+
+    if (!out[1] && out[2] && out[5]) {
+      out[1] = out[2].clone().lerp(out[5], 0.5);
+    }
+
+    const width = Math.max(64, Math.round(viewport?.clientWidth || 1024));
+    const height = Math.max(64, Math.round(viewport?.clientHeight || 768));
+    const headSynth = synthesizeHeadLandmarks(
+      three,
+      character.boneNameMap,
+      camera,
+      width,
+      height,
+      character.modelRoot,
+      true,
+    );
+    if (headSynth?.world) {
+      if (!out[0]) out[0] = headSynth.world.nose.clone();
+      out[14] = headSynth.world.reye.clone();
+      out[15] = headSynth.world.leye.clone();
+      out[16] = headSynth.world.rear.clone();
+      out[17] = headSynth.world.lear.clone();
+    }
+
+    return out;
+  }
+
+  function getCameraForwardVector() {
+    if (!three || !camera) return null;
+    return new three.Vector3(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
+  }
+
+  function worldDepthOnCameraForward(worldPos) {
+    const fwd = getCameraForwardVector();
+    if (!fwd || !worldPos || !camera) return null;
+    return worldPos.clone().sub(camera.position).dot(fwd);
+  }
+
+  function overlayPointToWorldAtDepth(overlayX, overlayY, frameRect, depth) {
+    if (!three || !camera || !frameRect) return null;
+    const fx = Number(frameRect.x || 0);
+    const fy = Number(frameRect.y || 0);
+    const fw = Math.max(1e-6, Number(frameRect.width || 1));
+    const fh = Math.max(1e-6, Number(frameRect.height || 1));
+    const nx = (Number(overlayX) - fx) / fw;
+    const ny = (Number(overlayY) - fy) / fh;
+    if (!Number.isFinite(nx) || !Number.isFinite(ny)) return null;
+    const ndcX = nx * 2 - 1;
+    const ndcY = -(ny * 2 - 1);
+    const farPoint = new three.Vector3(ndcX, ndcY, 1).unproject(camera);
+    const dir = farPoint.sub(camera.position);
+    const dirLen = dir.length();
+    if (!Number.isFinite(dirLen) || dirLen <= 1e-8) return null;
+    dir.normalize();
+    const forward = getCameraForwardVector();
+    if (!forward) return null;
+    const denom = dir.dot(forward);
+    if (!Number.isFinite(denom) || Math.abs(denom) <= 1e-6) return null;
+    const t = Number(depth) / denom;
+    if (!Number.isFinite(t) || t <= 0.0) return null;
+    return camera.position.clone().add(dir.multiplyScalar(t));
+  }
+
+  function detectionPointToOverlay(point, frameRect, imageWidth, imageHeight) {
+    if (!point || !frameRect) return null;
+    const xn = Number(point.xn);
+    const yn = Number(point.yn);
+    if (Number.isFinite(xn) && Number.isFinite(yn)) {
+      return {
+        x: frameRect.x + Math.max(0, Math.min(1, xn)) * frameRect.width,
+        y: frameRect.y + Math.max(0, Math.min(1, yn)) * frameRect.height,
+      };
+    }
+    const px = Number(point.x);
+    const py = Number(point.y);
+    const w = Math.max(1, Number(imageWidth || 1));
+    const h = Math.max(1, Number(imageHeight || 1));
+    if (!Number.isFinite(px) || !Number.isFinite(py)) return null;
+    return {
+      x: frameRect.x + (px / w) * frameRect.width,
+      y: frameRect.y + (py / h) * frameRect.height,
+    };
+  }
+
+  function rotateBoneTowardWorldDirection(bone, currentEndWorld, targetDirWorld, maxAngle = null) {
+    if (!bone || !currentEndWorld || !targetDirWorld || !three) return false;
+    const start = new three.Vector3();
+    bone.getWorldPosition(start);
+    const currentDir = currentEndWorld.clone().sub(start);
+    if (currentDir.lengthSq() <= 1e-10 || targetDirWorld.lengthSq() <= 1e-10) {
+      return false;
+    }
+    currentDir.normalize();
+    const targetDir = targetDirWorld.clone().normalize();
+    const deltaQ = new three.Quaternion().setFromUnitVectors(currentDir, targetDir);
+    if (!Number.isFinite(deltaQ.x + deltaQ.y + deltaQ.z + deltaQ.w)) return false;
+    let appliedDelta = deltaQ;
+    if (Number.isFinite(maxAngle) && maxAngle > 1e-6) {
+      let angle = 2 * Math.acos(Math.max(-1, Math.min(1, deltaQ.w)));
+      if (Number.isFinite(angle) && angle > 1e-6) {
+        if (angle > Math.PI) angle = (2 * Math.PI) - angle;
+        if (angle > maxAngle) {
+          const axis = new three.Vector3(deltaQ.x, deltaQ.y, deltaQ.z);
+          if (axis.lengthSq() > 1e-10) {
+            axis.normalize();
+            appliedDelta = new three.Quaternion().setFromAxisAngle(axis, maxAngle);
+          }
+        }
+      }
+    }
+
+    const boneWorldQ = new three.Quaternion();
+    bone.getWorldQuaternion(boneWorldQ);
+    const newWorldQ = appliedDelta.multiply(boneWorldQ).normalize();
+
+    const parentWorldQ = new three.Quaternion();
+    if (bone.parent) {
+      bone.parent.getWorldQuaternion(parentWorldQ);
+    } else {
+      parentWorldQ.identity();
+    }
+    const invParentQ = parentWorldQ.clone().invert();
+    bone.quaternion.copy(invParentQ.multiply(newWorldQ)).normalize();
+    bone.updateMatrixWorld(true);
+    return true;
+  }
+
+  function setBoneWorldQuaternion(bone, worldQ) {
+    if (!bone || !worldQ || !three) return false;
+    const parentWorldQ = new three.Quaternion();
+    if (bone.parent) {
+      bone.parent.getWorldQuaternion(parentWorldQ);
+    } else {
+      parentWorldQ.identity();
+    }
+    const localQ = parentWorldQ.clone().invert().multiply(worldQ).normalize();
+    if (!Number.isFinite(localQ.x + localQ.y + localQ.z + localQ.w)) return false;
+    bone.quaternion.copy(localQ);
+    bone.updateMatrixWorld(true);
+    return true;
+  }
+
+  function applyPartialWorldRotationDelta(bone, deltaQ, fraction = 1.0, maxAngle = null) {
+    if (!bone || !deltaQ || !three) return false;
+    let angle = 2 * Math.acos(Math.max(-1, Math.min(1, deltaQ.w)));
+    if (!Number.isFinite(angle) || angle <= 1e-6) return false;
+    if (angle > Math.PI) angle = (2 * Math.PI) - angle;
+    let axis = new three.Vector3(deltaQ.x, deltaQ.y, deltaQ.z);
+    if (axis.lengthSq() <= 1e-10) return false;
+    axis.normalize();
+    const limitedAngle = Number.isFinite(maxAngle) && maxAngle > 1e-6
+      ? Math.min(angle * Math.max(0, Number(fraction || 0)), maxAngle)
+      : angle * Math.max(0, Number(fraction || 0));
+    if (!Number.isFinite(limitedAngle) || limitedAngle <= 1e-6) return false;
+    const partialDelta = new three.Quaternion().setFromAxisAngle(axis, limitedAngle);
+    const currentWorldQ = new three.Quaternion();
+    bone.getWorldQuaternion(currentWorldQ);
+    const newWorldQ = partialDelta.multiply(currentWorldQ).normalize();
+    return setBoneWorldQuaternion(bone, newWorldQ);
+  }
+
+  function getTorsoDriveBones(character) {
+    if (!character?.boneNameMap) return { hipsBone: null, spineBone: null, neckBone: null };
+    const hipsBone = findBoneByAliases(character.boneNameMap, [
+      "mixamorigHips", "Hips", "mixamorigPelvis", "Pelvis",
+    ]);
+    const spineBone = findBoneByAliases(character.boneNameMap, [
+      "mixamorigSpine2", "Spine2", "mixamorigUpperChest", "UpperChest",
+      "mixamorigChest", "Chest", "mixamorigSpine1", "Spine1", "mixamorigSpine", "Spine",
+    ]);
+    const neckBone = findBoneByAliases(character.boneNameMap, OPENPOSE_TO_BONE.Neck || []);
+    return { hipsBone, spineBone, neckBone };
+  }
+
+  function buildTargetFaceWorldPoints(person, frameRect, depth) {
+    if (!person || !frameRect || !Number.isFinite(depth)) return null;
+    const kps = Array.isArray(person?.face?.kps) ? person.face.kps : null;
+    if (!kps || kps.length < 5) return null;
+    const imageW = Math.max(1, Number(person?.image_width || 1));
+    const imageH = Math.max(1, Number(person?.image_height || 1));
+    const toWorld = (pt) => {
+      if (!Array.isArray(pt) || pt.length < 2) return null;
+      const overlay = detectionPointToOverlay({ x: Number(pt[0]), y: Number(pt[1]) }, frameRect, imageW, imageH);
+      if (!overlay) return null;
+      return overlayPointToWorldAtDepth(overlay.x, overlay.y, frameRect, depth);
+    };
+    // InsightFace 5-point key order is image-ordered:
+    // [image-left eye, image-right eye, nose, image-left mouth, image-right mouth].
+    // Our rig-side synthetic landmarks are subject-ordered:
+    // [reye, leye, nose, ...] where "right" / "left" are the character's sides.
+    // For a frontal face, subject-right appears on image-left, so we intentionally swap here.
+    const reye = toWorld(kps[0]);
+    const leye = toWorld(kps[1]);
+    const nose = toWorld(kps[2]);
+    const rmouth = toWorld(kps[3]);
+    const lmouth = toWorld(kps[4]);
+    const mouth = averageScenePoints([lmouth, rmouth]);
+    if (!leye || !reye || !nose) return null;
+    return { leye, reye, nose, mouth };
+  }
+
+  function buildTargetFaceOverlayPoints(person, frameRect) {
+    if (!person || !frameRect) return null;
+    const kps = Array.isArray(person?.face?.kps) ? person.face.kps : null;
+    if (!kps || kps.length < 5) return null;
+    const imageW = Math.max(1, Number(person?.image_width || 1));
+    const imageH = Math.max(1, Number(person?.image_height || 1));
+    const toOverlay = (pt) => {
+      if (!Array.isArray(pt) || pt.length < 2) return null;
+      return detectionPointToOverlay({ x: Number(pt[0]), y: Number(pt[1]) }, frameRect, imageW, imageH);
+    };
+    const leftEye = toOverlay(kps[0]);
+    const rightEye = toOverlay(kps[1]);
+    const nose = toOverlay(kps[2]);
+    const leftMouth = toOverlay(kps[3]);
+    const rightMouth = toOverlay(kps[4]);
+    const mouth = averageScenePoints([leftMouth, rightMouth]);
+    if (!leftEye || !rightEye || !nose) return null;
+    return { leftEye, rightEye, nose, mouth };
+  }
+
+  function normalizeFaceOverlayPoints(face) {
+    if (!face?.nose || !face?.leye || !face?.reye) return null;
+    const leftEye = face.leye.x <= face.reye.x ? face.leye : face.reye;
+    const rightEye = face.leye.x <= face.reye.x ? face.reye : face.leye;
+    return {
+      leftEye,
+      rightEye,
+      nose: face.nose,
+      mouth: face.mouth || null,
+    };
+  }
+
+  function applyFaceDrivenHeadOrientation(person, character) {
+    if (!character || !three || !camera || !viewport) return false;
+    if (!person?.face?.kps) return false;
+    const width = Math.max(64, Math.round(viewport?.clientWidth || 1024));
+    const height = Math.max(64, Math.round(viewport?.clientHeight || 768));
+    const frameRect = getRenderFrameRect(width, height);
+    const currentFace2dRaw = getCachedFaceLandmarks2d(character, width, height, frameRect);
+    const currentFace2d = normalizeFaceOverlayPoints(currentFace2dRaw);
+    const targetFace2d = buildTargetFaceOverlayPoints(person, frameRect);
+    const headBone = findBoneByAliases(character.boneNameMap, ["mixamorigHead", "Head"]);
+    const neckBone = findBoneByAliases(character.boneNameMap, OPENPOSE_TO_BONE.Neck || []);
+    if (!headBone || !currentFace2d || !targetFace2d) return false;
+    const currentEyeMid = averageScenePoints([currentFace2d.leftEye, currentFace2d.rightEye]);
+    const targetEyeMid = averageScenePoints([targetFace2d.leftEye, targetFace2d.rightEye]);
+    if (!currentEyeMid || !targetEyeMid) return false;
+
+    const currentEyeVec = currentFace2d.rightEye.clone().sub(currentFace2d.leftEye);
+    const targetEyeVec = targetFace2d.rightEye.clone().sub(targetFace2d.leftEye);
+    const currentEyeDist = currentEyeVec.length();
+    const targetEyeDist = targetEyeVec.length();
+    if (!Number.isFinite(currentEyeDist) || !Number.isFinite(targetEyeDist) || currentEyeDist <= 1e-5 || targetEyeDist <= 1e-5) {
+      return false;
+    }
+
+    const wrapAngle = (a) => {
+      let out = a;
+      while (out > Math.PI) out -= Math.PI * 2;
+      while (out < -Math.PI) out += Math.PI * 2;
+      return out;
+    };
+
+    const currentRoll = Math.atan2(currentEyeVec.y, currentEyeVec.x);
+    const targetRoll = Math.atan2(targetEyeVec.y, targetEyeVec.x);
+    const rollDelta = wrapAngle(targetRoll - currentRoll);
+
+    const currentYawMetric = currentFace2d.nose && currentEyeDist > 1e-5
+      ? currentFace2d.nose.clone().sub(currentEyeMid).dot(currentEyeVec.clone().normalize()) / currentEyeDist
+      : 0;
+    const targetYawMetric = targetFace2d.nose && targetEyeDist > 1e-5
+      ? targetFace2d.nose.clone().sub(targetEyeMid).dot(targetEyeVec.clone().normalize()) / targetEyeDist
+      : 0;
+    const yawDelta = Math.max(-0.35, Math.min(0.35, (targetYawMetric - currentYawMetric) * 1.2));
+
+    const currentWorldQ = new three.Quaternion();
+    headBone.getWorldQuaternion(currentWorldQ);
+    let applied = false;
+
+    const cameraForward = getCameraForwardVector();
+    if (cameraForward && Number.isFinite(rollDelta) && Math.abs(rollDelta) > 1e-4) {
+      const clampedRoll = Math.max(-0.4, Math.min(0.4, rollDelta));
+      const rollQ = new three.Quaternion().setFromAxisAngle(cameraForward, clampedRoll);
+      if (neckBone) {
+        applied = applyPartialWorldRotationDelta(neckBone, rollQ, 0.22, 0.12) || applied;
+      }
+      applied = applyPartialWorldRotationDelta(headBone, rollQ, 0.55, 0.24) || applied;
+    }
+
+    if (Number.isFinite(yawDelta) && Math.abs(yawDelta) > 1e-4) {
+      const headUpAxis = new three.Vector3(0, 1, 0).applyQuaternion(currentWorldQ).normalize();
+      const yawQ = new three.Quaternion().setFromAxisAngle(headUpAxis, yawDelta);
+      if (neckBone) {
+        applied = applyPartialWorldRotationDelta(neckBone, yawQ, 0.28, 0.14) || applied;
+      }
+      applied = applyPartialWorldRotationDelta(headBone, yawQ, 0.62, 0.28) || applied;
+    }
+
+    return applied;
+  }
+
+  function computeOverlayPoseStats(points2d) {
+    const pts = Array.isArray(points2d) ? points2d.filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y)) : [];
+    if (!pts.length) return null;
+    const xs = pts.map((p) => p.x);
+    const ys = pts.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+    return {
+      minX, maxX, minY, maxY,
+      centerX: (minX + maxX) * 0.5,
+      centerY: (minY + maxY) * 0.5,
+      width: maxX - minX,
+      height: maxY - minY,
+    };
+  }
+
+  function scenePointFromCvCoords(point) {
+    if (!point || !three) return null;
+    const x = Number(point.x);
+    const y = Number(point.y);
+    const z = Number(point.z);
+    if (![x, y, z].every(Number.isFinite)) return null;
+    // OpenCV camera coordinates: +x right, +y down, +z forward.
+    // Three.js view space is more convenient here with +y up and camera looking along -Z.
+    return new three.Vector3(x, -y, -z);
+  }
+
+  function namedJointScenePoint(namedJoints, name) {
+    if (!namedJoints || typeof namedJoints !== "object") return null;
+    return scenePointFromCvCoords(namedJoints[name]);
+  }
+
+  function namedJointOverlayPoint(namedJoints, name, frameRect, imageW = 1, imageH = 1) {
+    if (!namedJoints || typeof namedJoints !== "object" || !frameRect) return null;
+    const entry = namedJoints[name];
+    if (!entry || typeof entry !== "object") return null;
+    const un = Number(entry.un);
+    const vn = Number(entry.vn);
+    if (Number.isFinite(un) && Number.isFinite(vn)) {
+      return {
+        x: frameRect.x + un * frameRect.width,
+        y: frameRect.y + vn * frameRect.height,
+      };
+    }
+    const u = Number(entry.u);
+    const v = Number(entry.v);
+    if (!Number.isFinite(u) || !Number.isFinite(v)) return null;
+    return {
+      x: frameRect.x + (u / Math.max(1, Number(imageW || 1))) * frameRect.width,
+      y: frameRect.y + (v / Math.max(1, Number(imageH || 1))) * frameRect.height,
+    };
+  }
+
+  function namedJointProjectedWorldPoint(person, jointName, frameRect, depth) {
+    if (!person?.joints3d_named || !frameRect || !Number.isFinite(depth) || depth <= 0.0) {
+      return namedJointScenePoint(person?.joints3d_named, jointName);
+    }
+    const imageW = Math.max(1, Number(person?.image_width || 1));
+    const imageH = Math.max(1, Number(person?.image_height || 1));
+    const overlay = namedJointOverlayPoint(person.joints3d_named, jointName, frameRect, imageW, imageH);
+    if (!overlay) {
+      return namedJointScenePoint(person.joints3d_named, jointName);
+    }
+    return overlayPointToWorldAtDepth(overlay.x, overlay.y, frameRect, depth)
+      || namedJointScenePoint(person.joints3d_named, jointName);
+  }
+
+  function averageOverlayPoints(points) {
+    const valid = Array.isArray(points) ? points.filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y)) : [];
+    if (!valid.length) return null;
+    return {
+      x: valid.reduce((a, p) => a + p.x, 0) / valid.length,
+      y: valid.reduce((a, p) => a + p.y, 0) / valid.length,
+    };
+  }
+
+  function averageScenePoints(points) {
+    const valid = Array.isArray(points) ? points.filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z)) : [];
+    if (!valid.length || !three) return null;
+    const out = new three.Vector3();
+    valid.forEach((p) => out.add(p));
+    out.multiplyScalar(1 / valid.length);
+    return out;
+  }
+
+  function getCharacterReferencePose(character) {
+    if (!character || !three) return null;
+    const lHipBone = getBoneForOpenPoseIndex(character, 11);
+    const rHipBone = getBoneForOpenPoseIndex(character, 8);
+    const lShoulderBone = getBoneForOpenPoseIndex(character, 5);
+    const rShoulderBone = getBoneForOpenPoseIndex(character, 2);
+    const neckBone = getBoneForOpenPoseIndex(character, 1);
+    const lAnkleBone = getBoneForOpenPoseIndex(character, 13);
+    const rAnkleBone = getBoneForOpenPoseIndex(character, 10);
+    const headBone = findBoneByAliases(character.boneNameMap, ["mixamorigHead", "Head"]);
+
+    const worldPos = (bone) => {
+      if (!bone) return null;
+      const p = new three.Vector3();
+      bone.getWorldPosition(p);
+      return p;
+    };
+
+    const pelvis = averageScenePoints([worldPos(lHipBone), worldPos(rHipBone)]);
+    const ankles = averageScenePoints([worldPos(lAnkleBone), worldPos(rAnkleBone)]);
+    const shoulders = averageScenePoints([worldPos(lShoulderBone), worldPos(rShoulderBone)]);
+    const leftHip = worldPos(lHipBone);
+    const rightHip = worldPos(rHipBone);
+    const leftShoulder = worldPos(lShoulderBone);
+    const rightShoulder = worldPos(rShoulderBone);
+    const neck = worldPos(neckBone);
+    const head = worldPos(headBone);
+    const shoulderWidth = (() => {
+      return leftShoulder && rightShoulder ? leftShoulder.distanceTo(rightShoulder) : null;
+    })();
+    const hipWidth = (() => {
+      return leftHip && rightHip ? leftHip.distanceTo(rightHip) : null;
+    })();
+    return {
+      pelvis, ankles, shoulders, neck, head,
+      leftHip, rightHip, leftShoulder, rightShoulder,
+      shoulderWidth, hipWidth,
+    };
+  }
+
+  function getCharacterReferencePose2d(character, width, height, frameRect = null) {
+    const ref = getCharacterReferencePose(character);
+    if (!ref?.pelvis) return null;
+    const proj = (p) => (p ? projectWorldToOverlay(p, width, height, frameRect) : null);
+    const pelvis = proj(ref.pelvis);
+    const upper = averageOverlayPoints([
+      proj(ref.neck),
+      proj(ref.leftShoulder),
+      proj(ref.rightShoulder),
+      proj(ref.head),
+    ]);
+    if (!pelvis || !upper) return null;
+    return { pelvis, upper };
+  }
+
+  function buildBasisQuaternion(rightVec, upVec, forwardHint = null) {
+    if (!three || !rightVec || !upVec) return null;
+    const right = rightVec.clone();
+    const up = upVec.clone();
+    if (right.lengthSq() <= 1e-10 || up.lengthSq() <= 1e-10) return null;
+    right.normalize();
+    up.normalize();
+    let forward = new three.Vector3().crossVectors(right, up);
+    if (forward.lengthSq() <= 1e-10) return null;
+    forward.normalize();
+    if (forwardHint && forward.dot(forwardHint) < 0) {
+      forward.multiplyScalar(-1);
+    }
+    const orthoUp = new three.Vector3().crossVectors(forward, right).normalize();
+    const mat = new three.Matrix4().makeBasis(right, orthoUp, forward);
+    return new three.Quaternion().setFromRotationMatrix(mat).normalize();
+  }
+
+  function getCharacterTorsoBasis(character) {
+    const ref = getCharacterReferencePose(character);
+    if (!ref?.pelvis || !ref?.leftHip || !ref?.rightHip) return null;
+    const rightVec = (() => {
+      const shoulderRight = ref.rightShoulder && ref.leftShoulder
+        ? ref.rightShoulder.clone().sub(ref.leftShoulder)
+        : null;
+      const hipRight = ref.rightHip.clone().sub(ref.leftHip);
+      if (shoulderRight && shoulderRight.lengthSq() > 1e-10) {
+        return shoulderRight.add(hipRight).multiplyScalar(0.5);
+      }
+      return hipRight;
+    })();
+    const upTarget = (ref.shoulders || ref.neck || ref.head);
+    if (!upTarget) return null;
+    const upVec = upTarget.clone().sub(ref.pelvis);
+    const forwardHint = new three.Vector3(0, 0, 1).applyQuaternion(character.modelRoot.quaternion).normalize();
+    return buildBasisQuaternion(rightVec, upVec, forwardHint);
+  }
+
+  function getTargetTorsoBasis(namedJoints) {
+    if (!namedJoints || !three) return null;
+    const leftHip = namedJointScenePoint(namedJoints, "left_hip");
+    const rightHip = namedJointScenePoint(namedJoints, "right_hip");
+    const leftShoulder = namedJointScenePoint(namedJoints, "left_shoulder");
+    const rightShoulder = namedJointScenePoint(namedJoints, "right_shoulder");
+    const pelvis = averageScenePoints([
+      namedJointScenePoint(namedJoints, "pelvis"),
+      leftHip,
+      rightHip,
+    ]);
+    const upper = averageScenePoints([
+      namedJointScenePoint(namedJoints, "neck"),
+      leftShoulder,
+      rightShoulder,
+      namedJointScenePoint(namedJoints, "head"),
+    ]);
+    if (!pelvis || !upper || !leftHip || !rightHip) return null;
+    const shoulderRight = leftShoulder && rightShoulder
+      ? rightShoulder.clone().sub(leftShoulder)
+      : null;
+    const hipRight = rightHip.clone().sub(leftHip);
+    const rightVec = shoulderRight && shoulderRight.lengthSq() > 1e-10
+      ? shoulderRight.add(hipRight).multiplyScalar(0.5)
+      : hipRight;
+    const upVec = upper.clone().sub(pelvis);
+    const forwardHint = new three.Vector3(0, 0, 1);
+    return buildBasisQuaternion(rightVec, upVec, forwardHint);
+  }
+
+  function applyCharacterRootOrientation(character, namedJoints) {
+    if (!character?.modelRoot || !three) return false;
+    const currentBasis = getCharacterTorsoBasis(character);
+    const targetBasis = getTargetTorsoBasis(namedJoints);
+    if (!currentBasis || !targetBasis) return false;
+    const currentForward = new three.Vector3(0, 0, 1).applyQuaternion(currentBasis);
+    const targetForward = new three.Vector3(0, 0, 1).applyQuaternion(targetBasis);
+    currentForward.y = 0;
+    targetForward.y = 0;
+    if (currentForward.lengthSq() <= 1e-10 || targetForward.lengthSq() <= 1e-10) return false;
+    currentForward.normalize();
+    targetForward.normalize();
+    const cross = new three.Vector3().crossVectors(currentForward, targetForward);
+    const dot = Math.max(-1, Math.min(1, currentForward.dot(targetForward)));
+    const angle = Math.atan2(cross.y, dot);
+    if (!Number.isFinite(angle) || Math.abs(angle) <= 1e-5) return false;
+    const delta = new three.Quaternion().setFromAxisAngle(new three.Vector3(0, 1, 0), angle);
+    if (!Number.isFinite(delta.x + delta.y + delta.z + delta.w)) return false;
+    character.modelRoot.quaternion.premultiply(delta).normalize();
+    character.modelRoot.updateMatrixWorld(true);
+    return true;
+  }
+
+  function applyCharacterTorsoOrientation(character, namedJoints) {
+    if (!character?.modelRoot || !three) return false;
+    const currentBasis = getCharacterTorsoBasis(character);
+    const targetBasis = getTargetTorsoBasis(namedJoints);
+    if (!currentBasis || !targetBasis) return false;
+    const delta = targetBasis.clone().multiply(currentBasis.clone().invert()).normalize();
+    if (!Number.isFinite(delta.x + delta.y + delta.z + delta.w)) return false;
+    const { hipsBone, spineBone, neckBone } = getTorsoDriveBones(character);
+    let applied = false;
+    if (hipsBone) {
+      applied = applyPartialWorldRotationDelta(hipsBone, delta, 0.28, 0.22) || applied;
+    }
+    if (spineBone) {
+      applied = applyPartialWorldRotationDelta(spineBone, delta, 0.72, 0.42) || applied;
+    } else if (neckBone) {
+      applied = applyPartialWorldRotationDelta(neckBone, delta, 0.35, 0.25) || applied;
+    }
+    if (applied) {
+      character.modelRoot.updateMatrixWorld(true);
+    }
+    return applied;
+  }
+
+  function applyCharacterScreenLean(person, character) {
+    if (!character?.modelRoot || !person?.joints3d_named || !three || !camera || !viewport) return false;
+    const width = Math.max(64, Math.round(viewport?.clientWidth || 1024));
+    const height = Math.max(64, Math.round(viewport?.clientHeight || 768));
+    const frameRect = getRenderFrameRect(width, height);
+    const current2d = getCharacterReferencePose2d(character, width, height, frameRect);
+    if (!current2d?.pelvis || !current2d?.upper) return false;
+
+    const joints = person.joints3d_named;
+    const imageW = Math.max(1, Number(person?.image_width || 1));
+    const imageH = Math.max(1, Number(person?.image_height || 1));
+    const leftHip = namedJointOverlayPoint(joints, "left_hip", frameRect, imageW, imageH);
+    const rightHip = namedJointOverlayPoint(joints, "right_hip", frameRect, imageW, imageH);
+    const leftShoulder = namedJointOverlayPoint(joints, "left_shoulder", frameRect, imageW, imageH);
+    const rightShoulder = namedJointOverlayPoint(joints, "right_shoulder", frameRect, imageW, imageH);
+    const pelvis = averageOverlayPoints([
+      namedJointOverlayPoint(joints, "pelvis", frameRect, imageW, imageH),
+      leftHip,
+      rightHip,
+    ]);
+    const upper = averageOverlayPoints([
+      namedJointOverlayPoint(joints, "neck", frameRect, imageW, imageH),
+      leftShoulder,
+      rightShoulder,
+      namedJointOverlayPoint(joints, "head", frameRect, imageW, imageH),
+    ]);
+    if (!pelvis || !upper) return false;
+
+    const currentVec = new three.Vector2(current2d.upper.x - current2d.pelvis.x, current2d.upper.y - current2d.pelvis.y);
+    const targetVec = new three.Vector2(upper.x - pelvis.x, upper.y - pelvis.y);
+    if (currentVec.lengthSq() <= 1e-8 || targetVec.lengthSq() <= 1e-8) return false;
+    const wrapAngle = (a) => {
+      let out = a;
+      while (out > Math.PI) out -= Math.PI * 2;
+      while (out < -Math.PI) out += Math.PI * 2;
+      return out;
+    };
+    const currentAngle = Math.atan2(currentVec.y, currentVec.x);
+    const targetAngle = Math.atan2(targetVec.y, targetVec.x);
+    const leanDelta = Math.max(-0.45, Math.min(0.45, wrapAngle(targetAngle - currentAngle)));
+    if (!Number.isFinite(leanDelta) || Math.abs(leanDelta) <= 1e-4) return false;
+
+    const cameraForward = getCameraForwardVector();
+    if (!cameraForward) return false;
+    const leanQ = new three.Quaternion().setFromAxisAngle(cameraForward, leanDelta);
+    const { hipsBone, spineBone } = getTorsoDriveBones(character);
+    let applied = false;
+    if (hipsBone) {
+      applied = applyPartialWorldRotationDelta(hipsBone, leanQ, 0.9, 0.34) || applied;
+    }
+    if (spineBone) {
+      applied = applyPartialWorldRotationDelta(spineBone, leanQ, 0.28, 0.14) || applied;
+    }
+    if (applied) {
+      character.modelRoot.updateMatrixWorld(true);
+    }
+    return applied;
+  }
+
+  function scaleCharacterToTargetBody(character, namedJoints, bodyMetrics = null) {
+    if (!character || !namedJoints) return;
+    const ref = getCharacterReferencePose(character);
+    if (!ref?.pelvis || !ref?.ankles || !ref?.head) return;
+    const targetPelvis = averageScenePoints([
+      namedJointScenePoint(namedJoints, "left_hip"),
+      namedJointScenePoint(namedJoints, "right_hip"),
+      namedJointScenePoint(namedJoints, "pelvis"),
+    ]);
+    const targetAnkles = averageScenePoints([
+      namedJointScenePoint(namedJoints, "left_ankle"),
+      namedJointScenePoint(namedJoints, "right_ankle"),
+    ]);
+    const targetHead = averageScenePoints([
+      namedJointScenePoint(namedJoints, "head"),
+      namedJointScenePoint(namedJoints, "neck"),
+    ]);
+    const targetShoulderWidth = (() => {
+      const l = namedJointScenePoint(namedJoints, "left_shoulder");
+      const r = namedJointScenePoint(namedJoints, "right_shoulder");
+      return l && r ? l.distanceTo(r) : null;
+    })();
+    const targetHipWidth = (() => {
+      const l = namedJointScenePoint(namedJoints, "left_hip");
+      const r = namedJointScenePoint(namedJoints, "right_hip");
+      return l && r ? l.distanceTo(r) : null;
+    })();
+    if (!targetPelvis || !targetAnkles || !targetHead) return;
+    const refHeight = ref.head.distanceTo(ref.ankles);
+    const targetHeight = targetHead.distanceTo(targetAnkles);
+    if (!Number.isFinite(refHeight) || !Number.isFinite(targetHeight) || refHeight <= 1e-6 || targetHeight <= 1e-6) return;
+    const heightRatio = Math.max(0.3, Math.min(3.0, targetHeight / refHeight));
+
+    let widthRatio = heightRatio;
+    const widthCandidates = [];
+    if (Number.isFinite(ref.shoulderWidth) && ref.shoulderWidth > 1e-6 && Number.isFinite(targetShoulderWidth) && targetShoulderWidth > 1e-6) {
+      widthCandidates.push(targetShoulderWidth / ref.shoulderWidth);
+    }
+    if (Number.isFinite(ref.hipWidth) && ref.hipWidth > 1e-6 && Number.isFinite(targetHipWidth) && targetHipWidth > 1e-6) {
+      widthCandidates.push(targetHipWidth / ref.hipWidth);
+    }
+    if (widthCandidates.length) {
+      widthRatio = widthCandidates.reduce((a, b) => a + b, 0) / widthCandidates.length;
+    }
+    const metricsRatio = Number(bodyMetrics?.shoulder_hip_ratio || 0);
+    if (Number.isFinite(metricsRatio) && metricsRatio > 0) {
+      if (metricsRatio >= 1.18) {
+        widthRatio *= 1.05;
+      } else if (metricsRatio <= 1.02) {
+        widthRatio *= 0.97;
+      }
+    }
+    widthRatio = Math.max(0.35, Math.min(2.2, widthRatio));
+    // Keep scaling isotropic to avoid visibly distorting mesh proportions.
+    // Mesh selection should carry most body-shape variation; non-uniform root scaling
+    // creates stretched feet/hands and skewed silhouettes.
+    const uniformRatio = Math.max(0.3, Math.min(3.0, ((heightRatio * 2.0) + widthRatio) / 3.0));
+    character.modelRoot.scale.set(uniformRatio, uniformRatio, uniformRatio);
+    character.modelRoot.updateMatrixWorld(true);
+  }
+
+  function setCharacterPelvisTo(character, targetPelvis) {
+    if (!character || !targetPelvis || !three) return;
+    const ref = getCharacterReferencePose(character);
+    if (!ref?.pelvis) return;
+    const delta = targetPelvis.clone().sub(ref.pelvis);
+    character.modelRoot.position.add(delta);
+    character.modelRoot.updateMatrixWorld(true);
+  }
+
+  function applyAdvancedPoseToCharacter(person, character) {
+    if (!person?.joints3d_named) {
+      applyDetectedPoseToCharacter(person, character);
+      return;
+    }
+    if (!character || !three) {
+      throw new Error("Character is not ready for advanced pose application.");
+    }
+
+    const joints = person.joints3d_named;
+    const width = Math.max(64, Math.round(viewport?.clientWidth || 1024));
+    const height = Math.max(64, Math.round(viewport?.clientHeight || 768));
+    const frameRect = getRenderFrameRect(width, height);
+    scaleCharacterToTargetBody(character, joints, person?.body_metrics || null);
+    applyCharacterRootOrientation(character, joints);
+
+    const currentRef = getCharacterReferencePose(character);
+    const pelvisDepth = currentRef?.pelvis ? worldDepthOnCameraForward(currentRef.pelvis) : null;
+    const pelvisTarget = averageScenePoints([
+      namedJointProjectedWorldPoint(person, "pelvis", frameRect, pelvisDepth),
+      namedJointProjectedWorldPoint(person, "left_hip", frameRect, pelvisDepth),
+      namedJointProjectedWorldPoint(person, "right_hip", frameRect, pelvisDepth),
+    ]);
+    if (pelvisTarget) {
+      setCharacterPelvisTo(character, pelvisTarget);
+    }
+    applyCharacterTorsoOrientation(character, joints);
+    applyCharacterScreenLean(person, character);
+
+    const hasFaceDrivenHead = Array.isArray(person?.face?.kps) && person.face.kps.length >= 5;
+    const segments = [
+      { start: "right_shoulder", end: "right_elbow", driveIdx: 2, endIdx: 3 },
+      { start: "right_elbow", end: "right_wrist", driveIdx: 3, endIdx: 4 },
+      { start: "left_shoulder", end: "left_elbow", driveIdx: 5, endIdx: 6 },
+      { start: "left_elbow", end: "left_wrist", driveIdx: 6, endIdx: 7 },
+      { start: "right_hip", end: "right_knee", driveIdx: 8, endIdx: 9 },
+      { start: "right_knee", end: "right_ankle", driveIdx: 9, endIdx: 10 },
+      { start: "right_ankle", end: "right_foot", side: "right", maxAngle: 0.38 },
+      { start: "left_hip", end: "left_knee", driveIdx: 11, endIdx: 12 },
+      { start: "left_knee", end: "left_ankle", driveIdx: 12, endIdx: 13 },
+      { start: "left_ankle", end: "left_foot", side: "left", maxAngle: 0.38 },
+    ];
+    if (!hasFaceDrivenHead) {
+      segments.push({ start: "neck", end: "head", kind: "head", maxAngle: 0.45 });
+    }
+
+    let applied = 0;
+    for (let iter = 0; iter < 4; iter += 1) {
+      for (const seg of segments) {
+        const { driveBone, endBone } = seg.kind === "head"
+          ? getHeadDriveBones(character)
+          : seg.side
+            ? getFootDriveBones(character, seg.side)
+            : {
+                driveBone: getBoneForOpenPoseIndex(character, seg.driveIdx),
+                endBone: getBoneForOpenPoseIndex(character, seg.endIdx),
+              };
+        if (!driveBone || !endBone) continue;
+        const currentStart = new three.Vector3();
+        const currentEnd = new three.Vector3();
+        driveBone.getWorldPosition(currentStart);
+        endBone.getWorldPosition(currentEnd);
+        const startDepth = worldDepthOnCameraForward(currentStart);
+        const endDepth = worldDepthOnCameraForward(currentEnd);
+        const startTarget = namedJointProjectedWorldPoint(person, seg.start, frameRect, startDepth);
+        const endTarget = namedJointProjectedWorldPoint(person, seg.end, frameRect, endDepth);
+        if (!startTarget || !endTarget) continue;
+        const targetDir = endTarget.clone().sub(startTarget);
+        if (rotateBoneTowardWorldDirection(driveBone, currentEnd, targetDir, seg.maxAngle)) {
+          applied += 1;
+        }
+      }
+      character.modelRoot.updateMatrixWorld(true);
+    }
+
+    if (hasFaceDrivenHead && applyFaceDrivenHeadOrientation(person, character)) {
+      applied += 1;
+      character.modelRoot.updateMatrixWorld(true);
+    }
+
+    if (!applied) {
+      throw new Error("Advanced 3D retarget produced no valid bone updates.");
+    }
+
+    refreshSkinnedMeshes();
+    syncInputsFromBone();
+  }
+
+  function setSceneCameraFromAdvancedPayload(payload) {
+    if (!camera || !orbit) return false;
+    const K = Array.isArray(payload?.camera_intrinsics) ? payload.camera_intrinsics : null;
+    const imageW = Math.max(1, Math.round(Number(payload?.image_width || 1024)));
+    const imageH = Math.max(1, Math.round(Number(payload?.image_height || 768)));
+    if (!K || !Array.isArray(K[1])) return false;
+    const fy = Number(K[1][1]);
+    if (!Number.isFinite(fy) || fy <= 1e-6) return false;
+
+    const fov = 2 * Math.atan(imageH / (2 * fy)) * (180 / Math.PI);
+    const slot = getActiveCameraSlot();
+    slot.resolution = [imageW, imageH];
+    slot.fov = Math.max(10, Math.min(140, fov));
+    slot.position = [0, 0, 0];
+
+    const pelvisPoints = [];
+    const persons = Array.isArray(payload?.persons) ? payload.persons : [];
+    persons.forEach((person) => {
+      const pelvis = averageScenePoints([
+        namedJointScenePoint(person?.joints3d_named, "pelvis"),
+        namedJointScenePoint(person?.joints3d_named, "left_hip"),
+        namedJointScenePoint(person?.joints3d_named, "right_hip"),
+      ]);
+      if (pelvis) pelvisPoints.push(pelvis);
+    });
+    const averagePelvis = averageScenePoints(pelvisPoints) || new three.Vector3(0, 1, -2);
+    // Keep camera optical axis aligned with the original image.
+    // Multi-HMR joints are already in camera space, so rotating the camera to look at the pelvis
+    // destroys the original projection geometry.
+    const target = new three.Vector3(0, 0, Number.isFinite(averagePelvis.z) ? averagePelvis.z : -2);
+    slot.target = [target.x, target.y, target.z];
+    setCameraFromSlot(slot);
+    camera.position.set(0, 0, 0);
+    camera.fov = slot.fov;
+    camera.updateProjectionMatrix();
+    orbit.target.copy(target);
+    orbit.update();
+    readCurrentCameraToSlot(activeCameraIndex);
+    resizeRenderer();
+    return true;
+  }
+
+  function applyCameraHintFromDetection(detectionPoints, frameRect, activeCharacter) {
+    if (!camera || !orbit || !Array.isArray(detectionPoints) || !activeCharacter) return;
+    const overlayW = Math.max(1, Math.round(viewport?.clientWidth || 1));
+    const overlayH = Math.max(1, Math.round(viewport?.clientHeight || 1));
+    const current2d = computeOpenPosePositions2d(overlayW, overlayH, frameRect, activeCharacter);
+    const currentStats = computeOverlayPoseStats(current2d);
+    const targetStats = computeOverlayPoseStats(detectionPoints);
+    if (!currentStats || !targetStats) return;
+
+    const forward = getCameraForwardVector();
+    if (!forward) return;
+
+    const camToTarget = orbit.target.clone().sub(camera.position);
+    const baseDepth = Math.max(0.05, camToTarget.dot(forward));
+    const worldCurrentCenter = overlayPointToWorldAtDepth(currentStats.centerX, currentStats.centerY, frameRect, baseDepth);
+    const worldTargetCenter = overlayPointToWorldAtDepth(targetStats.centerX, targetStats.centerY, frameRect, baseDepth);
+    if (worldCurrentCenter && worldTargetCenter) {
+      const delta = worldCurrentCenter.clone().sub(worldTargetCenter);
+      camera.position.add(delta);
+      orbit.target.add(delta);
+    }
+
+    const currentHeight = Math.max(1e-6, Number(currentStats.height || 0));
+    const targetHeight = Math.max(1e-6, Number(targetStats.height || 0));
+    if (currentHeight > 0.0 && targetHeight > 0.0) {
+      const scaleRatio = Math.max(0.45, Math.min(2.2, currentHeight / targetHeight));
+      const dir = camera.position.clone().sub(orbit.target);
+      const dist = dir.length();
+      if (dist > 1e-5) {
+        const newDist = Math.max(0.08, dist * scaleRatio);
+        camera.position.copy(orbit.target.clone().add(dir.normalize().multiplyScalar(newDist)));
+      }
+    }
+
+    camera.updateProjectionMatrix();
+    orbit.update();
+    readCurrentCameraToSlot(activeCameraIndex);
+  }
+
+  function applyDetectedPoseToCharacter(detectionPayload, targetCharacter = null) {
+    const active = targetCharacter || getActiveCharacter();
+    if (!active || !Array.isArray(active.bones) || !active.bones.length) {
+      throw new Error("No active character loaded.");
+    }
+    const points = Array.isArray(detectionPayload?.keypoints_openpose18)
+      ? detectionPayload.keypoints_openpose18
+      : null;
+    if (!points || !points.length) {
+      throw new Error("Pose payload does not contain keypoints.");
+    }
+
+    syncProjectionState();
+    const viewportW = Math.max(1, Math.round(viewport?.clientWidth || 1));
+    const viewportH = Math.max(1, Math.round(viewport?.clientHeight || 1));
+    const frameRect = getRenderFrameRect(viewportW, viewportH);
+    const worldNow = getCharacterOpenPoseWorld(active);
+
+    const depthValues = worldNow
+      .map((p) => worldDepthOnCameraForward(p))
+      .filter((v) => Number.isFinite(v) && v > 0.01);
+    const defaultDepth = depthValues.length
+      ? depthValues.reduce((a, b) => a + b, 0) / depthValues.length
+      : Math.max(0.25, camera.position.distanceTo(orbit.target));
+
+    const detectionOverlay = Array.from({ length: OPENPOSE_NAMES.length }, () => null);
+    const targetWorld = Array.from({ length: OPENPOSE_NAMES.length }, () => null);
+    for (let i = 0; i < OPENPOSE_NAMES.length; i += 1) {
+      const point = points[i];
+      const conf = Number(point?.confidence ?? 0);
+      if (!point || !Number.isFinite(conf) || conf < 0.05) continue;
+      const ov = detectionPointToOverlay(
+        point,
+        frameRect,
+        Number(detectionPayload?.image_width || 0),
+        Number(detectionPayload?.image_height || 0),
+      );
+      if (!ov) continue;
+      detectionOverlay[i] = ov;
+      const depth = Number.isFinite(worldDepthOnCameraForward(worldNow[i])) && worldDepthOnCameraForward(worldNow[i]) > 0.01
+        ? worldDepthOnCameraForward(worldNow[i])
+        : defaultDepth;
+      const wp = overlayPointToWorldAtDepth(ov.x, ov.y, frameRect, depth);
+      if (wp) {
+        targetWorld[i] = wp;
+      }
+    }
+
+    // Retarget major chains. Two passes improves convergence for longer chains.
+    const segments = [
+      { from: 2, to: 3, drive: 2 },
+      { from: 3, to: 4, drive: 3 },
+      { from: 5, to: 6, drive: 5 },
+      { from: 6, to: 7, drive: 6 },
+      { from: 8, to: 9, drive: 8 },
+      { from: 9, to: 10, drive: 9 },
+      { from: 11, to: 12, drive: 11 },
+      { from: 12, to: 13, drive: 12 },
+      { from: 1, to: 0, drive: 1 },
+    ];
+
+    let applied = 0;
+    for (let iter = 0; iter < 2; iter += 1) {
+      for (const seg of segments) {
+        const startTarget = targetWorld[seg.from];
+        const endTarget = targetWorld[seg.to];
+        if (!startTarget || !endTarget) continue;
+        const driveBone = getBoneForOpenPoseIndex(active, seg.drive);
+        const toBone = getBoneForOpenPoseIndex(active, seg.to);
+        if (!driveBone || !toBone) continue;
+        const currentEnd = new three.Vector3();
+        toBone.getWorldPosition(currentEnd);
+        const targetDir = endTarget.clone().sub(startTarget);
+        if (rotateBoneTowardWorldDirection(driveBone, currentEnd, targetDir)) {
+          applied += 1;
+        }
+      }
+      active.modelRoot?.updateMatrixWorld?.(true);
+    }
+
+    if (!applied) {
+      throw new Error("Could not map detected pose to current rig.");
+    }
+
+    applyCameraHintFromDetection(detectionOverlay, frameRect, active);
+    refreshSkinnedMeshes();
+    syncInputsFromBone();
+    scheduleHistoryCapture(90);
+  }
+
+  let riggedMeshListCache = null;
+  const riggedMeshBufferCache = new Map();
+
+  async function getRiggedMeshList(force = false) {
+    if (!force && Array.isArray(riggedMeshListCache)) {
+      return riggedMeshListCache.slice();
+    }
+    const listResp = await fetch("/ess/rigged/list", { cache: "no-store" });
+    if (!listResp.ok) {
+      throw new Error(`mesh list failed: ${listResp.status}`);
+    }
+    const payload = await listResp.json();
+    const items = Array.isArray(payload?.items) ? payload.items.map((v) => String(v || "")) : [];
+    riggedMeshListCache = items.filter(Boolean);
+    return riggedMeshListCache.slice();
+  }
+
+  async function fetchRiggedMeshBuffer(meshName) {
+    const key = String(meshName || "");
+    if (!key) throw new Error("mesh name is empty");
+    const cached = riggedMeshBufferCache.get(key);
+    if (cached instanceof ArrayBuffer) {
+      return cached.slice(0);
+    }
+    const fileResp = await fetch(`/ess/rigged/get?name=${encodeURIComponent(key)}`, {
+      cache: "no-store",
+    });
+    if (!fileResp.ok) {
+      throw new Error(`mesh load failed (${key}): ${fileResp.status}`);
+    }
+    const buf = await fileResp.arrayBuffer();
+    riggedMeshBufferCache.set(key, buf.slice(0));
+    return buf;
+  }
+
+  function chooseMeshForPerson(person, availableMeshes) {
+    const items = Array.isArray(availableMeshes) ? availableMeshes.map((v) => String(v || "")) : [];
+    if (!items.length) return null;
+    const lc = new Set(items.map((n) => n.toLowerCase()));
+    const has = (name) => (name && lc.has(String(name).toLowerCase())) ? items.find((m) => m.toLowerCase() === String(name).toLowerCase()) : null;
+
+    const suggestion = has(person?.mesh_suggestion);
+    if (suggestion) return suggestion;
+
+    const gender = String(person?.gender || "unknown").toLowerCase();
+    const tryList = [];
+    if (gender === "male") {
+      tryList.push("male_young.fbx");
+    } else {
+      tryList.push("female_young.fbx");
+    }
+    tryList.push("female_young.fbx", "male_young.fbx");
+    for (const n of tryList) {
+      const ok = has(n);
+      if (ok) return ok;
+    }
+    return items[0];
+  }
+
+  function computeAllCharactersBounds() {
+    if (!three || !Array.isArray(characters) || !characters.length) return null;
+    let union = null;
+    characters.forEach((ch) => {
+      if (!ch?.modelRoot) return;
+      const box = computeModelBounds(ch.modelRoot);
+      if (!box) return;
+      if (!union) {
+        union = box.clone();
+      } else {
+        union.union(box);
+      }
+    });
+    return union;
+  }
+
+  function placeCharactersByDetectionHints(persons) {
+    if (!three || !Array.isArray(persons) || !persons.length || !Array.isArray(characters) || !characters.length) return;
+    const pairs = [];
+    for (let i = 0; i < Math.min(persons.length, characters.length); i += 1) {
+      pairs.push({ person: persons[i], character: characters[i] });
+    }
+    if (!pairs.length) return;
+
+    const widths = [];
+    pairs.forEach(({ character }) => {
+      const b = computeModelBounds(character.modelRoot);
+      if (!b) return;
+      const s = b.getSize(new three.Vector3());
+      if (Number.isFinite(s.x) && s.x > 1e-5) widths.push(s.x);
+    });
+    const avgWidth = widths.length ? widths.reduce((a, b) => a + b, 0) / widths.length : 0.45;
+    const spread = Math.max(avgWidth * Math.max(3.0, pairs.length * 1.2), 1.8);
+
+    const validHeights = pairs
+      .map((p) => Number(p.person?.scale_hint?.height || 0))
+      .filter((v) => Number.isFinite(v) && v > 1e-4);
+    const medianHeight = validHeights.length
+      ? validHeights.slice().sort((a, b) => a - b)[Math.floor(validHeights.length * 0.5)]
+      : 0.35;
+
+    pairs.forEach(({ person, character }) => {
+      const cxNorm = Number(person?.center_hint?.x);
+      const hNorm = Number(person?.scale_hint?.height || medianHeight);
+      const targetX = Number.isFinite(cxNorm) ? (cxNorm - 0.5) * spread : 0;
+      const depthDelta = Number.isFinite(hNorm) && hNorm > 1e-5
+        ? (medianHeight - hNorm) * Math.max(1.2, spread * 0.6)
+        : 0.0;
+
+      const bounds = computeModelBounds(character.modelRoot);
+      if (!bounds) return;
+      const center = bounds.getCenter(new three.Vector3());
+      const minY = bounds.min.y;
+      const shift = new three.Vector3(
+        targetX - center.x,
+        -minY,
+        depthDelta - center.z * 0.25,
+      );
+      character.modelRoot.position.add(shift);
+      character.modelRoot.updateMatrixWorld(true);
+    });
+  }
+
+  function frameAllCharacters() {
+    if (!camera || !orbit || !renderer) return;
+    const box = computeAllCharactersBounds();
+    if (!box) return;
+    const size = box.getSize(new three.Vector3());
+    const center = box.getCenter(new three.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (!Number.isFinite(maxDim) || maxDim <= 0) return;
+    const dist = maxDim * 2.0 / Math.tan((camera.fov * Math.PI) / 360);
+    const dir = new three.Vector3(0, 0.35, 1).normalize();
+    const newPos = center.clone().add(dir.multiplyScalar(Math.max(0.5, dist)));
+    camera.position.copy(newPos);
+    camera.lookAt(center);
+    orbit.target.copy(center);
+    orbit.update();
+    updateOrbitDistanceLimits();
+    updateCameraClipping();
+    readCurrentCameraToSlot(activeCameraIndex);
+    resizeRenderer();
+  }
+
+  function computeDetectionUnion2d(persons, frameRect) {
+    if (!Array.isArray(persons) || !persons.length || !frameRect) return null;
+    const points = [];
+    persons.forEach((p) => {
+      const kps = Array.isArray(p?.keypoints_openpose18) ? p.keypoints_openpose18 : [];
+      kps.forEach((kp) => {
+        const ov = detectionPointToOverlay(
+          kp,
+          frameRect,
+          Number(p?.image_width || 0),
+          Number(p?.image_height || 0),
+        );
+        if (ov) points.push(ov);
+      });
+    });
+    return computeOverlayPoseStats(points);
+  }
+
+  function computeCurrentUnion2d(frameRect) {
+    if (!Array.isArray(characters) || !characters.length) return null;
+    const overlayW = Math.max(1, Math.round(viewport?.clientWidth || 1));
+    const overlayH = Math.max(1, Math.round(viewport?.clientHeight || 1));
+    const points = [];
+    characters.forEach((ch) => {
+      const pose2d = computeOpenPosePositions2d(overlayW, overlayH, frameRect, ch);
+      pose2d.forEach((p) => {
+        if (p) points.push(p);
+      });
+    });
+    return computeOverlayPoseStats(points);
+  }
+
+  function alignCameraToDetectionUnion(persons, frameRect) {
+    if (!camera || !orbit || !frameRect) return;
+    const cur = computeCurrentUnion2d(frameRect);
+    const tgt = computeDetectionUnion2d(persons, frameRect);
+    if (!cur || !tgt) return;
+
+    const forward = getCameraForwardVector();
+    if (!forward) return;
+    const camToTarget = orbit.target.clone().sub(camera.position);
+    const baseDepth = Math.max(0.05, camToTarget.dot(forward));
+    const worldCur = overlayPointToWorldAtDepth(cur.centerX, cur.centerY, frameRect, baseDepth);
+    const worldTgt = overlayPointToWorldAtDepth(tgt.centerX, tgt.centerY, frameRect, baseDepth);
+    if (worldCur && worldTgt) {
+      const delta = worldCur.clone().sub(worldTgt);
+      camera.position.add(delta);
+      orbit.target.add(delta);
+    }
+
+    const curH = Math.max(1e-6, Number(cur.height || 0));
+    const tgtH = Math.max(1e-6, Number(tgt.height || 0));
+    if (curH > 0 && tgtH > 0) {
+      const scaleRatio = Math.max(0.45, Math.min(2.2, curH / tgtH));
+      const dir = camera.position.clone().sub(orbit.target);
+      const dist = dir.length();
+      if (dist > 1e-5) {
+        camera.position.copy(orbit.target.clone().add(dir.normalize().multiplyScalar(Math.max(0.08, dist * scaleRatio))));
+      }
+    }
+    camera.updateProjectionMatrix();
+    orbit.update();
+    readCurrentCameraToSlot(activeCameraIndex);
+  }
+
+  async function rebuildSceneFromDetectionPayload(payload) {
+    const advancedPersons = Array.isArray(payload?.persons)
+      ? payload.persons
+          .filter((p) => p?.joints3d_named && typeof p.joints3d_named === "object")
+          .map((p) => ({
+            ...p,
+            image_width: Number(payload?.image_width || p?.image_width || 0),
+            image_height: Number(payload?.image_height || p?.image_height || 0),
+          }))
+      : [];
+    if (String(payload?.engine || "") === "advanced_multihmr" && advancedPersons.length) {
+      const available = await getRiggedMeshList();
+      if (!available.length) {
+        throw new Error("No rigged meshes found in meshes/human_rig.");
+      }
+
+      clearCharactersFromScene();
+      for (let i = 0; i < advancedPersons.length; i += 1) {
+        const person = advancedPersons[i];
+        const meshName = chooseMeshForPerson(person, available);
+        if (!meshName) continue;
+        const buf = await fetchRiggedMeshBuffer(meshName);
+        const character = await loadModelFromFile(
+          { name: meshName, arrayBuffer: async () => buf },
+          buf.slice(0),
+          { name: meshName },
+        );
+        setSceneCameraFromAdvancedPayload(payload);
+        applyAdvancedPoseToCharacter(person, character);
+      }
+
+      if (!characters.length) {
+        throw new Error("No characters could be created from advanced detections.");
+      }
+
+      if (!setSceneCameraFromAdvancedPayload(payload)) {
+        frameAllCharacters();
+      }
+      refreshCharacterTabs();
+      applyActiveCharacter(characters[0] || null);
+      populateBones();
+      refreshSkinnedMeshes();
+      scheduleHistoryCapture(120);
+      return;
+    }
+
+    const personsRaw = Array.isArray(payload?.persons) && payload.persons.length
+      ? payload.persons
+      : [payload];
+    const persons = personsRaw
+      .filter((p) => Array.isArray(p?.keypoints_openpose18) && p.keypoints_openpose18.length)
+      .map((p) => ({
+        ...p,
+        image_width: Number(payload?.image_width || p?.image_width || 0),
+        image_height: Number(payload?.image_height || p?.image_height || 0),
+      }));
+    if (!persons.length) {
+      throw new Error("No detectable people in image.");
+    }
+
+    const available = await getRiggedMeshList();
+    if (!available.length) {
+      throw new Error("No rigged meshes found in meshes/human_rig.");
+    }
+
+    clearCharactersFromScene();
+    for (let i = 0; i < persons.length; i += 1) {
+      const person = persons[i];
+      const meshName = chooseMeshForPerson(person, available);
+      if (!meshName) continue;
+      const buf = await fetchRiggedMeshBuffer(meshName);
+      const character = await loadModelFromFile(
+        { name: meshName, arrayBuffer: async () => buf },
+        buf.slice(0),
+        { name: meshName },
+      );
+      applyDetectedPoseToCharacter(person, character);
+    }
+
+    if (!characters.length) {
+      throw new Error("No characters could be created from detections.");
+    }
+
+    placeCharactersByDetectionHints(persons);
+    frameAllCharacters();
+    const frameRect = getRenderFrameRect(
+      Math.max(1, Math.round(viewport?.clientWidth || 1)),
+      Math.max(1, Math.round(viewport?.clientHeight || 1)),
+    );
+    alignCameraToDetectionUnion(persons, frameRect);
+    refreshCharacterTabs();
+    applyActiveCharacter(characters[0] || null);
+    populateBones();
+    refreshSkinnedMeshes();
+    scheduleHistoryCapture(120);
   }
 
   function findMirroredBoneForSelection() {
@@ -1771,7 +3575,7 @@ function buildOverlay(node, widget, stateRef) {
     return character.faceLandmarkCache;
   }
 
-  function getCachedFaceLandmarks2d(character, width, height, frameRect = null) {
+  function getCachedFaceLandmarksWorld(character, width, height) {
     if (!character || !three || !camera) return null;
     let cache = ensureFaceLandmarkCache(character, width, height);
     if (!cache) return null;
@@ -1795,10 +3599,16 @@ function buildOverlay(node, widget, stateRef) {
       rear: cache.local.rear.clone().applyMatrix4(m),
       lear: cache.local.lear.clone().applyMatrix4(m),
     };
-    // Ear points read better slightly closer to eye points.
     const earTighten = 0.34;
     world.rear.lerp(world.reye, earTighten);
     world.lear.lerp(world.leye, earTighten);
+    return world;
+  }
+
+  function getCachedFaceLandmarks2d(character, width, height, frameRect = null) {
+    if (!character || !three || !camera) return null;
+    const world = getCachedFaceLandmarksWorld(character, width, height);
+    if (!world) return null;
 
     const points2d = {
       nose: projectWorldToOverlay(world.nose, width, height, frameRect),
@@ -1916,7 +3726,7 @@ function buildOverlay(node, widget, stateRef) {
 
     const addBtn = document.createElement("button");
     addBtn.textContent = "+";
-    addBtn.title = "Add character from meshes/rigged";
+    addBtn.title = "Add character from meshes/human_rig";
     addBtn.style.border = "1px solid #2a303b";
     addBtn.style.borderRadius = "6px";
     addBtn.style.background = "#1d2b40";
@@ -1925,14 +3735,9 @@ function buildOverlay(node, widget, stateRef) {
     addBtn.style.padding = "6px 0";
     addBtn.addEventListener("click", async () => {
       try {
-        const listResp = await fetch("/ess/rigged/list", { cache: "no-store" });
-        if (!listResp.ok) {
-          throw new Error(`list failed: ${listResp.status}`);
-        }
-        const payload = await listResp.json();
-        const items = Array.isArray(payload?.items) ? payload.items : [];
+        const items = await getRiggedMeshList();
         if (!items.length) {
-          setStatus("No rigged meshes found in meshes/rigged.");
+          setStatus("No rigged meshes found in meshes/human_rig.");
           return;
         }
         const selectedName = await pickRiggedMeshName(items);
@@ -1941,13 +3746,7 @@ function buildOverlay(node, widget, stateRef) {
           setStatus("Selected mesh is not in repository list.");
           return;
         }
-        const fileResp = await fetch(`/ess/rigged/get?name=${encodeURIComponent(selectedName)}`, {
-          cache: "no-store",
-        });
-        if (!fileResp.ok) {
-          throw new Error(`load failed: ${fileResp.status}`);
-        }
-        const buf = await fileResp.arrayBuffer();
+        const buf = await fetchRiggedMeshBuffer(selectedName);
         await loadModelFromFile({ name: selectedName, arrayBuffer: async () => buf }, buf);
       } catch (err) {
         setStatus(`Failed repository load: ${err?.message || err}`);
@@ -1959,8 +3758,8 @@ function buildOverlay(node, widget, stateRef) {
 
   function captureSkeletonPreviewForSlot(slotIdx) {
     if (!renderer || !camera || !orbit) return "";
-    const idx = Math.max(0, Math.min(2, Number(slotIdx || 0)));
-    const slot = normalizeCameraSlot(cameraSlots[idx], `Cam ${idx + 1}`);
+    const idx = 0;
+    const slot = normalizeCameraSlot(cameraSlots[idx], "Camera");
     cameraSlots[idx] = slot;
 
     const outW = Math.max(64, Math.round(Number(slot.resolution?.[0] || 1024)));
@@ -2014,12 +3813,160 @@ function buildOverlay(node, widget, stateRef) {
 
   function captureAllSkeletonPreviews() {
     readCurrentCameraToSlot(activeCameraIndex);
-    const previews = [];
-    for (let i = 0; i < 3; i += 1) {
-      previews.push(captureSkeletonPreviewForSlot(i));
-    }
+    const previews = [captureSkeletonPreviewForSlot(0)];
     applySlotToCamera(activeCameraIndex);
     return previews;
+  }
+
+  function buildEdgeCanvasFromCanvas(sourceCanvas) {
+    const w = Math.max(1, Number(sourceCanvas?.width || 0));
+    const h = Math.max(1, Number(sourceCanvas?.height || 0));
+    if (!w || !h) return null;
+    const srcCtx = sourceCanvas.getContext("2d");
+    if (!srcCtx) return null;
+    const src = srcCtx.getImageData(0, 0, w, h);
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = w;
+    outCanvas.height = h;
+    const outCtx = outCanvas.getContext("2d");
+    if (!outCtx) return null;
+    const out = outCtx.createImageData(w, h);
+    const lum = new Float32Array(w * h);
+    for (let i = 0, p = 0; i < lum.length; i += 1, p += 4) {
+      lum[i] = src.data[p] * 0.299 + src.data[p + 1] * 0.587 + src.data[p + 2] * 0.114;
+    }
+    for (let y = 1; y < h - 1; y += 1) {
+      for (let x = 1; x < w - 1; x += 1) {
+        const idx = y * w + x;
+        const gx =
+          -lum[idx - w - 1] + lum[idx - w + 1]
+          - 2 * lum[idx - 1] + 2 * lum[idx + 1]
+          - lum[idx + w - 1] + lum[idx + w + 1];
+        const gy =
+          -lum[idx - w - 1] - 2 * lum[idx - w] - lum[idx - w + 1]
+          + lum[idx + w - 1] + 2 * lum[idx + w] + lum[idx + w + 1];
+        const mag = Math.min(255, Math.hypot(gx, gy));
+        const value = mag > 28 ? 255 : 0;
+        const p = idx * 4;
+        out.data[p] = value;
+        out.data[p + 1] = value;
+        out.data[p + 2] = value;
+        out.data[p + 3] = 255;
+      }
+    }
+    outCtx.putImageData(out, 0, 0);
+    return outCanvas;
+  }
+
+  function captureScenePreviewDataUrl(options = {}) {
+    if (!renderer || !camera || !scene) return "";
+    const mode = String(options?.mode || "beauty");
+    const explicitW = Number(options?.width || 0);
+    const explicitH = Number(options?.height || 0);
+    const maxWidth = Number(options?.maxWidth || 0);
+    const maxHeight = Number(options?.maxHeight || 0);
+    const slot = getActiveCameraSlot();
+    const renderW = Math.max(64, Math.round(explicitW || Number(slot?.resolution?.[0] || 1024)));
+    const renderH = Math.max(64, Math.round(explicitH || Number(slot?.resolution?.[1] || 768)));
+    const prevTransformVisible = transform?.visible;
+    const prevGroundPlaneVisible = groundPlane?.visible;
+    const prevGroundGridVisible = groundGrid?.visible;
+    const prevOriginAxesVisible = originAxes?.visible;
+    const prevOriginDotVisible = originDot?.visible;
+    const prevSelectedBoneMarkerVisible = selectedBoneMarker?.visible;
+    const prevSelectedBoneParentLineVisible = selectedBoneParentLine?.visible;
+    const materialStates = [];
+    const helperStates = [];
+    const prevOverrideMaterial = scene.overrideMaterial;
+    const prevAspect = camera.aspect;
+    const prevPixelRatio = renderer.getPixelRatio ? renderer.getPixelRatio() : 1;
+    if (typeof prevTransformVisible === "boolean") transform.visible = false;
+    if (typeof prevGroundPlaneVisible === "boolean") groundPlane.visible = false;
+    if (typeof prevGroundGridVisible === "boolean") groundGrid.visible = false;
+    if (typeof prevOriginAxesVisible === "boolean") originAxes.visible = false;
+    if (typeof prevOriginDotVisible === "boolean") originDot.visible = false;
+    if (typeof prevSelectedBoneMarkerVisible === "boolean") selectedBoneMarker.visible = false;
+    if (typeof prevSelectedBoneParentLineVisible === "boolean") selectedBoneParentLine.visible = false;
+    characters.forEach((character) => {
+      if (character?.skeletonHelper) {
+        helperStates.push([character.skeletonHelper, character.skeletonHelper.visible]);
+        character.skeletonHelper.visible = false;
+      }
+      character?.modelRoot?.traverse?.((child) => {
+        if (!child?.isMesh) return;
+        const mats = Array.isArray(child.material) ? child.material : [child.material];
+        mats.forEach((mat) => {
+          if (!mat) return;
+          materialStates.push([mat, mat.transparent, mat.opacity]);
+          mat.transparent = false;
+          mat.opacity = 1.0;
+          mat.needsUpdate = true;
+        });
+      });
+    });
+    syncProjectionState();
+    try {
+      if (mode === "depth" || mode === "edges") {
+        scene.overrideMaterial = new three.MeshDepthMaterial({
+          depthPacking: three.BasicDepthPacking,
+        });
+      }
+      if (renderer.setPixelRatio) {
+        renderer.setPixelRatio(1);
+      }
+      renderer.setSize(renderW, renderH, false);
+      camera.aspect = renderW / Math.max(1, renderH);
+      camera.updateProjectionMatrix();
+      renderer.render(scene, camera);
+      const srcCanvas = renderer.domElement;
+      if (!srcCanvas) return "";
+      const srcW = Math.max(1, Number(srcCanvas.width || renderW));
+      const srcH = Math.max(1, Number(srcCanvas.height || renderH));
+      const scale = (maxWidth > 0 && maxHeight > 0)
+        ? Math.min(maxWidth / srcW, maxHeight / srcH, 1)
+        : 1;
+      const outW = Math.max(1, Math.round(srcW * scale));
+      const outH = Math.max(1, Math.round(srcH * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = outW;
+      canvas.height = outH;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return "";
+      ctx.drawImage(srcCanvas, 0, 0, outW, outH);
+      if (mode === "edges") {
+        const edgeCanvas = buildEdgeCanvasFromCanvas(canvas);
+        return edgeCanvas ? edgeCanvas.toDataURL("image/png") : "";
+      }
+      return canvas.toDataURL("image/png");
+    } finally {
+      scene.overrideMaterial = prevOverrideMaterial || null;
+      materialStates.forEach(([mat, transparent, opacity]) => {
+        mat.transparent = transparent;
+        mat.opacity = opacity;
+        mat.needsUpdate = true;
+      });
+      helperStates.forEach(([helper, visible]) => {
+        helper.visible = visible;
+      });
+      if (typeof prevTransformVisible === "boolean") transform.visible = prevTransformVisible;
+      if (typeof prevGroundPlaneVisible === "boolean") groundPlane.visible = prevGroundPlaneVisible;
+      if (typeof prevGroundGridVisible === "boolean") groundGrid.visible = prevGroundGridVisible;
+      if (typeof prevOriginAxesVisible === "boolean") originAxes.visible = prevOriginAxesVisible;
+      if (typeof prevOriginDotVisible === "boolean") originDot.visible = prevOriginDotVisible;
+      if (typeof prevSelectedBoneMarkerVisible === "boolean") selectedBoneMarker.visible = prevSelectedBoneMarkerVisible;
+      if (typeof prevSelectedBoneParentLineVisible === "boolean") selectedBoneParentLine.visible = prevSelectedBoneParentLineVisible;
+      if (renderer.setPixelRatio) {
+        renderer.setPixelRatio(prevPixelRatio);
+      }
+      camera.aspect = prevAspect;
+      camera.updateProjectionMatrix();
+      resizeRenderer();
+      renderer.render(scene, camera);
+    }
+  }
+
+  function captureViewportRenderPreview(maxWidth = 420, maxHeight = 420) {
+    return captureScenePreviewDataUrl({ mode: "beauty", maxWidth, maxHeight });
   }
 
   function applyEuler(axis, deg) {
@@ -2385,25 +4332,23 @@ function buildOverlay(node, widget, stateRef) {
 
     const active = getActiveCharacter();
     const activePose = active ? serializePose(active.bones || []) : [];
-    readCurrentCameraToSlot(activeCameraIndex);
-    const camerasPayload = normalizeCameraSlots(cameraSlots).map((cam, idx) => ({
-      name: cam.name || `Cam ${idx + 1}`,
-      fov: Number(cam.fov || 45),
-      position: Array.isArray(cam.position) ? cam.position.slice(0, 3) : [0.0, 1.45, 2.75],
-      target: Array.isArray(cam.target) ? cam.target.slice(0, 3) : [0, 1.0, 0],
-      near: Number(cam.near || 0.001),
-      far: Number(cam.far || 3000),
-      resolution: Array.isArray(cam.resolution) ? cam.resolution.slice(0, 2) : [1024, 768],
-    }));
-    const activeCam = camerasPayload[Math.max(0, Math.min(2, activeCameraIndex))] || camerasPayload[0] || {};
+    readCurrentCameraToSlot(0);
+    const slot = normalizeCameraSlot(getActiveCameraSlot(), "Camera");
+    const activeCam = {
+      name: slot.name || "Camera",
+      fov: Number(slot.fov || 45),
+      position: Array.isArray(slot.position) ? slot.position.slice(0, 3) : [0.0, 1.45, 2.75],
+      target: Array.isArray(slot.target) ? slot.target.slice(0, 3) : [0, 1.0, 0],
+      near: Number(slot.near || 0.001),
+      far: Number(slot.far || 3000),
+      resolution: Array.isArray(slot.resolution) ? slot.resolution.slice(0, 2) : [1024, 768],
+    };
 
     const payload = {
       pose: activePose,
       characters: charactersPayload,
       active_character_id: activeCharacterId,
       camera: activeCam,
-      cameras: camerasPayload,
-      active_camera_index: Math.max(0, Math.min(2, activeCameraIndex)),
       meta: {
         modelName: modelBadge.textContent || "",
         updated: Date.now(),
@@ -2412,9 +4357,10 @@ function buildOverlay(node, widget, stateRef) {
 
   if (includePreview && renderer) {
     try {
-      const previews = captureAllSkeletonPreviews();
-      payload.preview_pngs = previews;
-      payload.preview_png = previews[0] || "";
+      const [width, height] = Array.isArray(activeCam.resolution) ? activeCam.resolution : [1024, 768];
+      payload.preview_png = captureScenePreviewDataUrl({ mode: "beauty", width, height }) || "";
+      payload.depth_png = captureScenePreviewDataUrl({ mode: "depth", width, height }) || "";
+      payload.edges_png = captureScenePreviewDataUrl({ mode: "edges", width, height }) || "";
     } catch (err) {
       console.warn("Failed to capture preview", err);
     }
@@ -2751,20 +4697,20 @@ function buildOverlay(node, widget, stateRef) {
     if (camera) {
       if (Array.isArray(savedPayload.cameras) && savedPayload.cameras.length) {
         cameraSlots = normalizeCameraSlots(savedPayload.cameras);
-        activeCameraIndex = Math.max(0, Math.min(2, Number(savedPayload.active_camera_index || 0)));
+        activeCameraIndex = 0;
       } else if (savedPayload.camera && typeof savedPayload.camera === "object") {
-        const legacy = normalizeCameraSlot(savedPayload.camera, `Cam ${activeCameraIndex + 1}`);
-        cameraSlots[activeCameraIndex] = {
-          ...cameraSlots[activeCameraIndex],
+        const legacy = normalizeCameraSlot(savedPayload.camera, "Camera");
+        cameraSlots[0] = {
+          ...cameraSlots[0],
           ...legacy,
-          resolution: Array.isArray(cameraSlots[activeCameraIndex]?.resolution)
-            ? cameraSlots[activeCameraIndex].resolution
+          resolution: Array.isArray(cameraSlots[0]?.resolution)
+            ? cameraSlots[0].resolution
             : [1024, 768],
         };
       }
       persistCameraSlotsToSession();
       buildCameraTabs();
-      applySlotToCamera(activeCameraIndex);
+      applySlotToCamera(0);
       updateOrbitDistanceLimits();
     }
     syncInputsFromBone();
@@ -3005,7 +4951,7 @@ function buildOverlay(node, widget, stateRef) {
       }
       window.addEventListener("resize", resizeRenderer);
     }
-    setStatus("Ready. Use the + tab to add character(s) from meshes/rigged.");
+    setStatus("Ready. Use the + tab to add character(s) from meshes/human_rig.");
     threeReady = true;
   }
 
@@ -3076,8 +5022,8 @@ function buildOverlay(node, widget, stateRef) {
             if ("metalness" in m) m.metalness = 0.05;
             if ("roughness" in m) m.roughness = 0.8;
           }
-          m.opacity = 0.55;
-          m.transparent = true;
+          m.opacity = 1.0;
+          m.transparent = false;
           m.needsUpdate = true;
         });
         if (child.isSkinnedMesh && child.geometry && !child.geometry.attributes.normal) {
@@ -3108,6 +5054,12 @@ function buildOverlay(node, widget, stateRef) {
       if (characters.length === 1) {
         frameModel();
       }
+      syncProjectionState();
+      ensureFaceLandmarkCache(
+        character,
+        Math.max(64, Math.round(viewport?.clientWidth || 1024)),
+        Math.max(64, Math.round(viewport?.clientHeight || 768)),
+      );
       updateFovSlider();
       setStatus(`Loaded ${character.name}`);
       scheduleHistoryCapture(120);
@@ -3255,6 +5207,57 @@ function buildOverlay(node, widget, stateRef) {
     if (!payload) return;
     await applyScenePayload(payload, { fromHistory: false });
     setStatus("Scene loaded from file.");
+  });
+
+  initFromImageBtn.addEventListener("click", async () => {
+    let progressDialog = null;
+    try {
+      if (initFromImageBtn.disabled) return;
+      const picked = await pickImageFileAsDataUrl();
+      if (!picked?.dataUrl) return;
+      initFromImageBtn.disabled = true;
+      setStatus(`Detecting pose from image: ${picked.name}`);
+      progressDialog = createInitProgressDialog(picked.name);
+      progressDialog.setSourceImage(picked.dataUrl);
+      progressDialog.appendLogs(["Uploading image and starting scene initialization"]);
+      progressDialog.setStage("Uploading image and starting scene initialization");
+      const requestId = `ess_pose_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+      progressDialog.startPolling(requestId);
+      const requestPromise = requestPoseInitFromImage(picked.dataUrl, requestId);
+      const payload = await requestPromise;
+      const finalProgress = await fetchPoseInitProgress(requestId);
+      if (progressDialog && finalProgress) {
+        progressDialog.applyProgress(finalProgress);
+      }
+      if (progressDialog) {
+        const modelPreview = renderModelStructurePreview(payload);
+        if (modelPreview) {
+          progressDialog.setModelImage(modelPreview);
+        }
+      }
+      if (progressDialog) {
+        progressDialog.setStage("Applying reconstructed scene");
+      }
+      await rebuildSceneFromDetectionPayload(payload);
+      if (progressDialog) {
+        const renderPreview = captureViewportRenderPreview();
+        if (renderPreview) {
+          progressDialog.setResultImage(renderPreview);
+        }
+      }
+      const count = Number(payload?.person_count || (Array.isArray(payload?.persons) ? payload.persons.length : (payload?.detected_count ? 1 : 0)));
+      setStatus(`Scene initialized from image (${Math.max(1, count)} character(s)).`);
+      if (progressDialog) {
+        progressDialog.complete(`Scene initialized from image (${Math.max(1, count)} character(s))`);
+      }
+    } catch (err) {
+      setStatus(`Init from image failed: ${err?.message || err}`);
+      if (progressDialog) {
+        progressDialog.fail(err?.message || err);
+      }
+    } finally {
+      initFromImageBtn.disabled = false;
+    }
   });
 
   centerBtn.addEventListener("click", () => {

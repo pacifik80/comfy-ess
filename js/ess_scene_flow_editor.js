@@ -1,4 +1,6 @@
 import { app } from "../../scripts/app.js";
+import { renderHighlight } from "./ess_template_highlight.js";
+import { installLoraTokenController } from "./ess_lora_token_editor.js";
 
 const FLOW_STYLE_ID = "ess-scene-flow-style";
 const TEMPLATE_STYLE_ID = "ess-scene-flow-template-style";
@@ -127,28 +129,6 @@ function ensureStyles() {
   }
 }
 
-function escapeHtml(text) { return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
-function simpleHighlight(text) {
-  const out = [];
-  for (let i = 0; i < text.length; i += 1) {
-    const ch = text[i];
-    const pair = text.slice(i, i + 2);
-    if (pair === "!>") { out.push('<span class="ess-tpl-negative-marker">!&gt;</span>'); i += 1; continue; }
-    if (pair === "<<" || pair === ">>") { out.push(`<span class="ess-tpl-variant">${escapeHtml(pair)}</span>`); i += 1; continue; }
-    if (ch === "{" || ch === "}" || ch === "|") { out.push(`<span class="ess-tpl-choice">${escapeHtml(ch)}</span>`); continue; }
-    if (ch === "[" || ch === "]" || ch === ":") { out.push(`<span class="ess-tpl-header">${escapeHtml(ch)}</span>`); continue; }
-    if (ch === "#") {
-      let j = i;
-      while (j < text.length && text[j] !== "\n") j += 1;
-      out.push(`<span class="ess-tpl-comment">${escapeHtml(text.slice(i, j))}</span>`);
-      i = j - 1;
-      continue;
-    }
-    out.push(escapeHtml(ch));
-  }
-  return out.join("");
-}
-
 function createTemplateEditor(initialValue, onChange) {
   const container = document.createElement("div");
   container.className = "ess-template-editor";
@@ -161,22 +141,36 @@ function createTemplateEditor(initialValue, onChange) {
   textarea.value = initialValue || "";
   textarea.placeholder = "Write element template...";
   textarea.spellcheck = false;
+  let loraController = null;
   const sync = () => {
     highlightContent.style.width = `${textarea.clientWidth || 0}px`;
     highlightContent.style.height = `${textarea.clientHeight || 0}px`;
     highlightContent.style.transform = `translate(${-textarea.scrollLeft}px, ${-textarea.scrollTop}px)`;
   };
-  const render = () => { highlightContent.innerHTML = simpleHighlight(textarea.value || ""); sync(); };
+  const render = () => {
+    const knownLoras = loraController?.getKnownLoras?.() || null;
+    highlightContent.innerHTML = renderHighlight(textarea.value || "", textarea.selectionStart || 0, { knownLoras });
+    sync();
+  };
   textarea.addEventListener("input", () => { onChange(textarea.value); render(); });
   textarea.addEventListener("scroll", sync);
   textarea.addEventListener("click", render);
   textarea.addEventListener("keyup", render);
+  textarea.addEventListener("select", render);
+  textarea.addEventListener("focus", render);
   container.appendChild(highlight);
   container.appendChild(textarea);
+  loraController = installLoraTokenController(textarea, { container, requestRender: render });
   render();
   const ro = new ResizeObserver(sync);
   ro.observe(textarea);
-  return { container, destroy() { ro.disconnect(); } };
+  return {
+    container,
+    destroy() {
+      ro.disconnect();
+      loraController?.destroy?.();
+    },
+  };
 }
 
 function nextId(prefix, items) {
