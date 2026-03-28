@@ -9,12 +9,28 @@ function ensureStyles() {
   style.textContent = `
 .ess-pose-widget {
   display: flex;
-  flex-direction: row;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   gap: 8px;
   padding: 6px 8px;
   color: #d6d6d6;
   font-size: 12px;
+}
+.ess-pose-widget-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ess-pose-widget-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.ess-pose-widget-status {
+  color: #9fc5ff;
+  white-space: nowrap;
 }
 .ess-pose-widget button {
   background: #2c313a;
@@ -26,6 +42,67 @@ function ensureStyles() {
 }
 .ess-pose-widget button:hover {
   background: #3a414c;
+}
+.ess-pose-node-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #2a303b;
+  border-radius: 6px;
+  background: #0d1219;
+}
+.ess-pose-node-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ess-pose-node-preview-title {
+  color: #dbeafe;
+  font-size: 12px;
+}
+.ess-pose-node-preview-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ess-pose-node-preview-tabs button {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+.ess-pose-node-preview-tabs button.active {
+  background: #29456a;
+  color: #f5f9ff;
+  box-shadow: inset 0 0 0 1px #5e87ba;
+}
+.ess-pose-node-preview-tabs button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ess-pose-node-preview-frame {
+  height: 172px;
+  border: 1px solid #1f2530;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #070b11;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ess-pose-node-preview-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #070b11;
+}
+.ess-pose-node-preview-empty {
+  padding: 12px;
+  text-align: center;
+  color: #91a0b5;
+  font-size: 11px;
+  line-height: 1.4;
 }
 .ess-pose-overlay {
   position: fixed;
@@ -50,8 +127,8 @@ function ensureStyles() {
 }
 .ess-pose-main {
   display: grid;
-  grid-template-columns: 300px 1fr 360px;
-  gap: 12px;
+  grid-template-columns: 300px 8px minmax(0, 1fr) 8px 360px;
+  gap: 0;
   padding: 12px;
   height: calc(100% - 54px);
   box-sizing: border-box;
@@ -63,6 +140,11 @@ function ensureStyles() {
   padding: 10px;
   box-sizing: border-box;
   overflow: hidden;
+}
+.ess-pose-left-panel {
+  display: grid;
+  grid-template-rows: auto auto minmax(160px, 0.75fr) auto minmax(220px, 1fr);
+  gap: 8px;
 }
 .ess-pose-panel h4 {
   margin: 0 0 8px;
@@ -110,6 +192,149 @@ function ensureStyles() {
   background: #32507a;
   color: #f5f9ff;
   box-shadow: inset 0 0 0 1px #5e87ba;
+}
+.ess-pose-tree {
+  overflow: auto;
+  background: #0b0e14;
+  border: 1px solid #1f2530;
+  border-radius: 6px;
+  min-height: 0;
+}
+.ess-pose-tree-section {
+  padding: 8px;
+  border-bottom: 1px solid #1a1f28;
+}
+.ess-pose-tree-section:last-child {
+  border-bottom: none;
+}
+.ess-pose-tree-section h5 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #87a4cb;
+}
+.ess-pose-tree-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ess-pose-tree-row:last-child {
+  margin-bottom: 0;
+}
+.ess-pose-tree-btn {
+  flex: 1;
+  border: none;
+  background: #121924;
+  color: #d6d6d6;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.ess-pose-tree-btn:hover {
+  background: #1a2230;
+}
+.ess-pose-tree-btn.active {
+  background: #29456a;
+  color: #f5f9ff;
+  box-shadow: inset 0 0 0 1px #5e87ba;
+}
+.ess-pose-tree-delete {
+  border: none;
+  cursor: pointer;
+  background: #3a1f28;
+  color: #f0c5d0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  min-width: 28px;
+}
+.ess-pose-tree-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ess-pose-tree-actions button {
+  background: #2f3540;
+  color: #e6e6e6;
+  border: 1px solid #3f4754;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.ess-pose-tree-actions button:hover {
+  background: #3a414c;
+}
+.ess-pose-detail-body {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ess-pose-info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: #0b0e14;
+  border: 1px solid #1f2530;
+  border-radius: 6px;
+}
+.ess-pose-info-row {
+  display: grid;
+  grid-template-columns: minmax(72px, auto) minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  font-size: 12px;
+}
+.ess-pose-info-row span:first-child {
+  color: #87a4cb;
+}
+.ess-pose-info-row code {
+  color: #d6e8ff;
+  font-family: Consolas, "Courier New", monospace;
+  white-space: normal;
+  word-break: break-word;
+}
+.ess-pose-param-row {
+  display: grid;
+  grid-template-columns: minmax(86px, 1fr) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.ess-pose-param-row input,
+.ess-pose-param-row select {
+  width: 100%;
+  background: #0f1115;
+  color: #e6e6e6;
+  border: 1px solid #2a303b;
+  border-radius: 4px;
+  padding: 4px 6px;
+  box-sizing: border-box;
+}
+.ess-pose-splitter {
+  width: 8px;
+  cursor: col-resize;
+  position: relative;
+}
+.ess-pose-splitter::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 3px;
+  width: 2px;
+  border-radius: 999px;
+  background: rgba(120, 144, 178, 0.35);
+}
+.ess-pose-splitter:hover::before,
+.ess-pose-splitter.dragging::before {
+  background: rgba(159, 197, 255, 0.9);
 }
 .ess-pose-controls label {
   display: flex;
@@ -259,7 +484,9 @@ function createEmptySession() {
     transform: null,
     renderLoopHandle: null,
     characters: [],
+    sceneObjects: [],
     activeCharacterId: null,
+    activeSelection: null,
     groundPlane: null,
     groundGrid: null,
     originAxes: null,
@@ -267,6 +494,10 @@ function createEmptySession() {
     cameraSlots: createDefaultCameraSlots(),
     activeCameraIndex: 0,
     logLines: ["[log] editor initialized"],
+    panelWidths: {
+      left: 300,
+      right: 360,
+    },
   };
 }
 
@@ -316,6 +547,14 @@ const OPENPOSE_COLORS = [
   "#ff0055", "#ff0000", "#ff5500", "#ffaa00", "#ffff00", "#aaff00",
   "#55ff00", "#00ff00", "#00ff55", "#00ffaa", "#00ffff", "#00aaff",
   "#0055ff", "#0000ff", "#ff00aa", "#aa00ff", "#ff00ff", "#5500ff",
+];
+
+const OPENPOSE_HAND_CONNECTIONS = [
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  [0, 9], [9, 10], [10, 11], [11, 12],
+  [0, 13], [13, 14], [14, 15], [15, 16],
+  [0, 17], [17, 18], [18, 19], [19, 20],
 ];
 
 const OPENPOSE_TO_BONE = {
@@ -389,7 +628,23 @@ function createNumberControl(labelText, min, max, step, onChange) {
   return { wrap, input };
 }
 
-function createRangeNumberControl(labelText, min, max, step, onChange) {
+function roundToStep(value, step) {
+  const numeric = Number(value);
+  const inc = Number(step);
+  if (!Number.isFinite(numeric)) return 0;
+  if (!Number.isFinite(inc) || inc <= 0) return numeric;
+  return Math.round(numeric / inc) * inc;
+}
+
+function formatSteppedValue(value, step) {
+  const numeric = roundToStep(value, step);
+  const stepText = String(step ?? "");
+  const decimals = stepText.includes(".") ? stepText.split(".")[1].length : 0;
+  if (!Number.isFinite(numeric)) return "0";
+  return String(Number(numeric.toFixed(Math.min(6, Math.max(0, decimals + 1)))));
+}
+
+function createRangeNumberControl(labelText, min, max, step, onChange, options = {}) {
   const wrap = document.createElement("label");
   wrap.style.flexDirection = "column";
   wrap.style.alignItems = "stretch";
@@ -407,16 +662,28 @@ function createRangeNumberControl(labelText, min, max, step, onChange) {
   slider.min = String(min);
   slider.max = String(max);
   slider.step = String(step);
-  const initial = labelText.toLowerCase().includes("scale") ? 1 : 0;
-  slider.value = String(initial);
+  const clampAbsoluteEnabled = options?.clampAbsolute !== false;
+  const relative = Boolean(options?.relative);
+  const relativeCenter = Number.isFinite(Number(options?.center))
+    ? Number(options.center)
+    : (labelText.toLowerCase().includes("scale") ? 1 : 0);
+  const compose = typeof options?.compose === "function"
+    ? options.compose
+    : ((base, raw, center) => base + (raw - center));
+  const initial = Number.isFinite(Number(options?.initial))
+    ? Number(options.initial)
+    : relativeCenter;
+  slider.value = String(relative ? relativeCenter : initial);
   slider.style.flex = "1";
 
   const number = document.createElement("input");
   number.type = "number";
-  number.min = String(min);
-  number.max = String(max);
+  if (clampAbsoluteEnabled) {
+    number.min = String(min);
+    number.max = String(max);
+  }
   number.step = String(step);
-  number.value = String(initial);
+  number.value = formatSteppedValue(initial, step);
   number.style.width = "64px";
   number.style.background = "#0f1115";
   number.style.color = "#e6e6e6";
@@ -424,17 +691,74 @@ function createRangeNumberControl(labelText, min, max, step, onChange) {
   number.style.borderRadius = "4px";
   number.style.padding = "3px 6px";
 
-  const updateBoth = (val, emit = true) => {
-    const clamped = Math.min(max, Math.max(min, val));
-    slider.value = String(clamped);
-    number.value = String(clamped);
-    if (emit) {
-      onChange(clamped);
+  let baseValue = initial;
+  let displayedValue = initial;
+  let sliderAdjusting = false;
+
+  const clampAbsolute = (val) => {
+    const numeric = Number(val);
+    if (!Number.isFinite(numeric)) return initial;
+    if (!clampAbsoluteEnabled) {
+      return roundToStep(numeric, step);
     }
+    return Math.min(max, Math.max(min, roundToStep(numeric, step)));
   };
 
-  slider.addEventListener("input", () => updateBoth(Number(slider.value) || 0, true));
-  number.addEventListener("input", () => updateBoth(Number(number.value) || 0, true));
+  const syncVisuals = (actual, { preserveSlider = false, updateBase = true } = {}) => {
+    const clamped = clampAbsolute(actual);
+    displayedValue = clamped;
+    if (updateBase) {
+      baseValue = clamped;
+    }
+    number.value = formatSteppedValue(clamped, step);
+    if (!preserveSlider) {
+      slider.value = String(relative ? relativeCenter : clamped);
+    }
+    return clamped;
+  };
+
+  const emitAbsolute = (actual, { preserveSlider = false, updateBase = true } = {}) => {
+    const clamped = syncVisuals(actual, { preserveSlider, updateBase });
+    onChange(clamped);
+    return clamped;
+  };
+
+  const commitRelative = () => {
+    if (!relative) return;
+    sliderAdjusting = false;
+    syncVisuals(displayedValue, { preserveSlider: false, updateBase: true });
+  };
+
+  const beginRelative = () => {
+    if (!relative) return;
+    sliderAdjusting = true;
+    baseValue = Number(number.value) || displayedValue || initial;
+  };
+
+  slider.addEventListener("pointerdown", () => beginRelative());
+  slider.addEventListener("mousedown", () => beginRelative());
+  slider.addEventListener("touchstart", () => beginRelative(), { passive: true });
+  slider.addEventListener("input", () => {
+    const raw = Number(slider.value);
+    if (relative) {
+      const actual = compose(baseValue, raw, relativeCenter);
+      emitAbsolute(actual, { preserveSlider: true, updateBase: false });
+      return;
+    }
+    emitAbsolute(raw, { preserveSlider: false, updateBase: true });
+  });
+  slider.addEventListener("change", () => commitRelative());
+  slider.addEventListener("pointerup", () => commitRelative());
+  slider.addEventListener("touchend", () => commitRelative());
+  slider.addEventListener("keyup", () => {
+    if (!relative) return;
+    commitRelative();
+  });
+
+  number.addEventListener("input", () => {
+    const actual = Number(number.value);
+    emitAbsolute(actual, { preserveSlider: false, updateBase: true });
+  });
 
   row.append(label, slider, number);
   wrap.appendChild(row);
@@ -443,8 +767,13 @@ function createRangeNumberControl(labelText, min, max, step, onChange) {
     wrap,
     slider,
     number,
-    setValue: (val) => updateBoth(val, false),
+    setValue: (val) => syncVisuals(val, { preserveSlider: sliderAdjusting && relative, updateBase: !sliderAdjusting }),
   };
+}
+
+function getNodeWidgetByName(node, name) {
+  if (!Array.isArray(node?.widgets)) return null;
+  return node.widgets.find((widget) => String(widget?.name || "") === name) || null;
 }
 
 function bufferToBase64(arrayBuffer) {
@@ -483,6 +812,31 @@ function toArrayBuffer(raw) {
 
 function cloneArrayBuffer(buffer) {
   return buffer.slice(0);
+}
+
+function parsePoseMeshEditorState(raw) {
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (_err) {
+    return null;
+  }
+}
+
+function extractPoseMeshEditorPreviews(raw) {
+  const parsed = parsePoseMeshEditorState(raw);
+  const preview = typeof parsed?.preview_png === "string" && parsed.preview_png
+    ? parsed.preview_png
+    : (Array.isArray(parsed?.preview_pngs) && parsed.preview_pngs.length ? String(parsed.preview_pngs[0] || "") : "");
+  return {
+    preview: String(preview || ""),
+    depth: String(parsed?.depth_png || ""),
+    edges: String(parsed?.edges_png || ""),
+  };
+}
+
+function getCharacterSceneRoot(character) {
+  return character?.sceneRoot || character?.modelRoot || null;
 }
 
 function findBoneByAliases(map, aliases) {
@@ -590,6 +944,22 @@ function raycastFromOrigin(threeRef, modelRoot, origin, direction, maxDistance, 
     }
   }
   return fallback ? fallback.clone() : origin.clone();
+}
+
+function raycastHitFromOrigin(threeRef, modelRoot, origin, direction, maxDistance) {
+  const dir = direction?.clone?.();
+  if (!threeRef || !modelRoot || !origin || !dir || dir.lengthSq() <= 1e-10) {
+    return null;
+  }
+  dir.normalize();
+  const ray = new threeRef.Raycaster(origin.clone(), dir, 0, Math.max(0.05, maxDistance || 1.0));
+  const hits = ray.intersectObject(modelRoot, true);
+  for (const hit of hits) {
+    if (hit?.object?.isMesh && hit?.point) {
+      return hit.point.clone();
+    }
+  }
+  return null;
 }
 
 function synthesizeHeadLandmarks(threeRef, boneMap, camera, width, height, modelRoot = null, asWorld = false) {
@@ -705,17 +1075,17 @@ function synthesizeHeadLandmarks(threeRef, boneMap, camera, width, height, model
     noseFallback,
   );
 
-  const eyeFront = 0.66 * headHeight;
-  const eyeUp = 0.11 * headHeight;
-  const eyeSide = 0.16 * headHeight;
+  const eyeFront = 0.60 * headHeight;
+  const eyeUp = 0.10 * headHeight;
+  const eyeSide = 0.11 * headHeight;
   const reyeFallback = headCenter.clone()
     .add(right.clone().multiplyScalar(eyeSide))
     .add(up.clone().multiplyScalar(0.08 * headHeight))
-    .add(forward.clone().multiplyScalar(0.14 * headHeight));
+    .add(forward.clone().multiplyScalar(0.10 * headHeight));
   const leyeFallback = headCenter.clone()
     .add(right.clone().multiplyScalar(-eyeSide))
     .add(up.clone().multiplyScalar(0.08 * headHeight))
-    .add(forward.clone().multiplyScalar(0.14 * headHeight));
+    .add(forward.clone().multiplyScalar(0.10 * headHeight));
   const reyeOrigin = headCenter.clone()
     .add(right.clone().multiplyScalar(eyeSide))
     .add(up.clone().multiplyScalar(eyeUp))
@@ -740,6 +1110,11 @@ function synthesizeHeadLandmarks(threeRef, boneMap, camera, width, height, model
     headHeight * 2.0,
     leyeFallback,
   );
+
+  // Pull eye centers slightly inward from the surface hit so they read as eye centers,
+  // not outer orbital corners or temple points on low-detail meshes.
+  reyePoint.lerp(reyeFallback, 0.42);
+  leyePoint.lerp(leyeFallback, 0.42);
 
   const earSide = 0.70 * headHeight;
   const earUp = 0.04 * headHeight;
@@ -822,6 +1197,12 @@ function buildOverlay(node, widget, stateRef) {
   ensureStyles();
   const sharedSession = getSessionForNode(node);
   let overlayCanvas = null;
+  let drawHandsToggle = null;
+  let drawFaceMaskToggle = null;
+  let editorRenderOptions = {
+    drawHands: getBooleanWidgetValue("draw_fingers", false),
+    drawFaceMask: getBooleanWidgetValue("draw_face_mask", false),
+  };
   if (widget && typeof widget.value === "string" && widget.value !== stateRef.value) {
     stateRef.value = widget.value;
   }
@@ -900,7 +1281,7 @@ function buildOverlay(node, widget, stateRef) {
 
   topbar.append(modelBadge, topActions, topbarSpacer, closeBtn);
 
-  async function pickRiggedMeshName(items) {
+  async function pickListDialog(titleText, items, confirmText = "Load") {
     return new Promise((resolve) => {
       const shade = document.createElement("div");
       shade.style.position = "absolute";
@@ -923,7 +1304,7 @@ function buildOverlay(node, widget, stateRef) {
       card.style.gap = "10px";
 
       const title = document.createElement("div");
-      title.textContent = "Choose character from meshes/human_rig";
+      title.textContent = String(titleText || "Choose item");
       title.style.fontSize = "13px";
       title.style.color = "#d6e8ff";
 
@@ -934,10 +1315,12 @@ function buildOverlay(node, widget, stateRef) {
       select.style.border = "1px solid #2a303b";
       select.style.borderRadius = "4px";
       select.style.padding = "6px 8px";
-      items.forEach((name) => {
+      items.forEach((entry) => {
+        const value = entry && typeof entry === "object" ? String(entry.value ?? "") : String(entry ?? "");
+        const label = entry && typeof entry === "object" ? String(entry.label ?? value) : value;
         const opt = document.createElement("option");
-        opt.value = name;
-        opt.textContent = name;
+        opt.value = value;
+        opt.textContent = label;
         select.appendChild(opt);
       });
 
@@ -957,7 +1340,7 @@ function buildOverlay(node, widget, stateRef) {
       cancel.style.cursor = "pointer";
 
       const ok = document.createElement("button");
-      ok.textContent = "Load";
+      ok.textContent = String(confirmText || "OK");
       ok.className = "save";
       ok.style.background = "#2563eb";
       ok.style.color = "#ffffff";
@@ -985,34 +1368,63 @@ function buildOverlay(node, widget, stateRef) {
     });
   }
 
+  async function pickRiggedMeshName(items) {
+    return pickListDialog("Choose character from meshes/fbx", items, "Load");
+  }
+
+  async function pickPrimitiveShapeType() {
+    const shapes = PRIMITIVE_SHAPES.map((shape) => ({
+      value: shape.type,
+      label: shape.label,
+    }));
+    return pickListDialog("Choose primitive object type", shapes, "Add");
+  }
+
   const main = document.createElement("div");
   main.className = "ess-pose-main";
 
   const leftPanel = document.createElement("div");
-  leftPanel.className = "ess-pose-panel";
+  leftPanel.className = "ess-pose-panel ess-pose-left-panel";
   const leftTitle = document.createElement("h4");
-  leftTitle.textContent = "Bones";
+  leftTitle.textContent = "Scene";
+  const sceneTreeActions = document.createElement("div");
+  sceneTreeActions.className = "ess-pose-tree-actions";
+  const addCharacterBtn = document.createElement("button");
+  addCharacterBtn.className = "secondary";
+  addCharacterBtn.textContent = "Add Character";
+  const addObjectBtn = document.createElement("button");
+  addObjectBtn.className = "secondary";
+  addObjectBtn.textContent = "Add Object";
+  sceneTreeActions.append(addCharacterBtn, addObjectBtn);
+  const sceneTree = document.createElement("div");
+  sceneTree.className = "ess-pose-tree";
+  const detailsTitle = document.createElement("h4");
+  detailsTitle.textContent = "Selection";
+  const detailsBody = document.createElement("div");
+  detailsBody.className = "ess-pose-detail-body";
+  const selectionSummary = document.createElement("div");
+  selectionSummary.className = "ess-pose-hint";
+  selectionSummary.textContent = "Select a character or object from the scene tree.";
+  const selectionExtraWrap = document.createElement("div");
+  selectionExtraWrap.style.display = "flex";
+  selectionExtraWrap.style.flexDirection = "column";
+  selectionExtraWrap.style.gap = "8px";
+  selectionExtraWrap.style.minHeight = "0";
   const boneList = document.createElement("div");
   boneList.className = "ess-pose-bone-list";
-  leftPanel.style.position = "relative";
-  boneList.style.marginRight = "46px";
-  const characterTabs = document.createElement("div");
-  characterTabs.style.position = "absolute";
-  characterTabs.style.top = "40px";
-  characterTabs.style.right = "6px";
-  characterTabs.style.bottom = "10px";
-  characterTabs.style.width = "36px";
-  characterTabs.style.display = "flex";
-  characterTabs.style.flexDirection = "column";
-  characterTabs.style.gap = "6px";
-  characterTabs.style.overflowY = "auto";
-  leftPanel.append(leftTitle, boneList, characterTabs);
+  boneList.style.flex = "1";
+  boneList.style.minHeight = "0";
+  detailsBody.append(selectionSummary, selectionExtraWrap, boneList);
+  leftPanel.append(leftTitle, sceneTreeActions, sceneTree, detailsTitle, detailsBody);
 
   const centerPanel = document.createElement("div");
   centerPanel.className = "ess-pose-panel";
   centerPanel.style.display = "flex";
   centerPanel.style.flexDirection = "column";
   centerPanel.style.padding = "0";
+
+  const leftSplitter = document.createElement("div");
+  leftSplitter.className = "ess-pose-splitter";
 
   const cameraBar = document.createElement("div");
   cameraBar.style.display = "flex";
@@ -1078,6 +1490,8 @@ function buildOverlay(node, widget, stateRef) {
   rightPanel.style.gridTemplateRows = "auto minmax(0, 1fr) auto auto auto";
   rightPanel.style.gap = "10px";
   rightPanel.style.overflow = "hidden";
+  const rightSplitter = document.createElement("div");
+  rightSplitter.className = "ess-pose-splitter";
   const controlsTitle = document.createElement("h4");
   controlsTitle.textContent = "Transforms";
   const controlsWrap = document.createElement("div");
@@ -1093,6 +1507,37 @@ function buildOverlay(node, widget, stateRef) {
   selectedBoneInfo.style.marginBottom = "6px";
   selectedBoneInfo.textContent = "Selected: (none)";
 
+  const createOverlayToggle = (labelText, checked, onChange) => {
+    const wrap = document.createElement("label");
+    wrap.style.display = "flex";
+    wrap.style.alignItems = "center";
+    wrap.style.justifyContent = "space-between";
+    wrap.style.gap = "8px";
+    wrap.style.padding = "4px 0";
+    wrap.style.fontSize = "12px";
+
+    const text = document.createElement("span");
+    text.textContent = labelText;
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.checked = Boolean(checked);
+    input.addEventListener("change", () => onChange(Boolean(input.checked)));
+
+    wrap.append(text, input);
+    return { wrap, input };
+  };
+
+  const handsOverlayControl = createOverlayToggle("Draw hands/fingers", editorRenderOptions.drawHands, (checked) => {
+    setEditorRenderOptions({ drawHands: checked });
+  });
+  drawHandsToggle = handsOverlayControl.input;
+
+  const faceOverlayControl = createOverlayToggle("Draw face mask", editorRenderOptions.drawFaceMask, (checked) => {
+    setEditorRenderOptions({ drawFaceMask: checked });
+  });
+  drawFaceMaskToggle = faceOverlayControl.input;
+
   const mirrorWrap = document.createElement("label");
   mirrorWrap.style.display = "none";
   mirrorWrap.style.alignItems = "center";
@@ -1106,20 +1551,65 @@ function buildOverlay(node, widget, stateRef) {
   mirrorText.textContent = "Mirror paired bone";
   mirrorWrap.append(mirrorCheck, mirrorText);
 
-  const rotX = createRangeNumberControl("Rot X", -180, 180, 0.5, (v) => applyEuler("x", v));
-  const rotY = createRangeNumberControl("Rot Y", -180, 180, 0.5, (v) => applyEuler("y", v));
-  const rotZ = createRangeNumberControl("Rot Z", -180, 180, 0.5, (v) => applyEuler("z", v));
-  const posX = createRangeNumberControl("Pos X", -5, 5, 0.01, (v) => applyPosition("x", v));
-  const posY = createRangeNumberControl("Pos Y", -5, 5, 0.01, (v) => applyPosition("y", v));
-  const posZ = createRangeNumberControl("Pos Z", -5, 5, 0.01, (v) => applyPosition("z", v));
-  const scaleU = createRangeNumberControl("Scale All", 0.1, 3, 0.01, (v) => applyScale("u", v));
-  const scaleX = createRangeNumberControl("Scale X", 0.1, 3, 0.01, (v) => applyScale("x", v));
-  const scaleY = createRangeNumberControl("Scale Y", 0.1, 3, 0.01, (v) => applyScale("y", v));
-  const scaleZ = createRangeNumberControl("Scale Z", 0.1, 3, 0.01, (v) => applyScale("z", v));
+  const rotX = createRangeNumberControl("Rot X", -180, 180, 0.5, (v) => applyEuler("x", v), {
+    relative: true,
+    center: 0,
+    clampAbsolute: false,
+  });
+  const rotY = createRangeNumberControl("Rot Y", -180, 180, 0.5, (v) => applyEuler("y", v), {
+    relative: true,
+    center: 0,
+    clampAbsolute: false,
+  });
+  const rotZ = createRangeNumberControl("Rot Z", -180, 180, 0.5, (v) => applyEuler("z", v), {
+    relative: true,
+    center: 0,
+    clampAbsolute: false,
+  });
+  const posX = createRangeNumberControl("Pos X", -2, 2, 0.01, (v) => applyPosition("x", v), {
+    relative: true,
+    center: 0,
+    clampAbsolute: false,
+  });
+  const posY = createRangeNumberControl("Pos Y", -2, 2, 0.01, (v) => applyPosition("y", v), {
+    relative: true,
+    center: 0,
+    clampAbsolute: false,
+  });
+  const posZ = createRangeNumberControl("Pos Z", -2, 2, 0.01, (v) => applyPosition("z", v), {
+    relative: true,
+    center: 0,
+    clampAbsolute: false,
+  });
+  const scaleU = createRangeNumberControl("Scale All", 0.1, 10, 0.01, (v) => applyScale("u", v), {
+    relative: true,
+    center: 1,
+    initial: 1,
+    compose: (base, raw, center) => base * (raw / center),
+  });
+  const scaleX = createRangeNumberControl("Scale X", 0.1, 10, 0.01, (v) => applyScale("x", v), {
+    relative: true,
+    center: 1,
+    initial: 1,
+    compose: (base, raw, center) => base * (raw / center),
+  });
+  const scaleY = createRangeNumberControl("Scale Y", 0.1, 10, 0.01, (v) => applyScale("y", v), {
+    relative: true,
+    center: 1,
+    initial: 1,
+    compose: (base, raw, center) => base * (raw / center),
+  });
+  const scaleZ = createRangeNumberControl("Scale Z", 0.1, 10, 0.01, (v) => applyScale("z", v), {
+    relative: true,
+    center: 1,
+    initial: 1,
+    compose: (base, raw, center) => base * (raw / center),
+  });
   const fovRange = createRangeNumberControl("Camera FOV", 15, 90, 1, () => {});
 
   controlsWrap.append(
-    selectedBoneInfo, mirrorWrap,
+    selectedBoneInfo,
+    mirrorWrap,
     rotX.wrap, rotY.wrap, rotZ.wrap,
     posX.wrap, posY.wrap, posZ.wrap,
     scaleU.wrap, scaleX.wrap, scaleY.wrap, scaleZ.wrap,
@@ -1133,7 +1623,7 @@ function buildOverlay(node, widget, stateRef) {
   saveBtn.textContent = "Save to Node";
   const centerBtn = document.createElement("button");
   centerBtn.className = "secondary";
-  centerBtn.textContent = "Frame Model";
+  centerBtn.textContent = "Frame Selection";
   footer.append(saveBtn, centerBtn);
 
   const hint = document.createElement("div");
@@ -1154,7 +1644,7 @@ function buildOverlay(node, widget, stateRef) {
   consolePanel.append(consoleTitle, consoleArea);
   rightPanel.append(controlsTitle, controlsWrap, hint, footer, consolePanel);
 
-  main.append(leftPanel, centerPanel, rightPanel);
+  main.append(leftPanel, leftSplitter, centerPanel, rightSplitter, rightPanel);
   overlay.append(topbar, main);
 
   document.body.appendChild(overlay);
@@ -1174,7 +1664,11 @@ function buildOverlay(node, widget, stateRef) {
   let FBXLoaderCls = null;
   let OBJLoaderCls = null;
   let characters = Array.isArray(sharedSession.characters) ? sharedSession.characters : [];
+  let sceneObjects = Array.isArray(sharedSession.sceneObjects) ? sharedSession.sceneObjects : [];
   let activeCharacterId = sharedSession.activeCharacterId || null;
+  let activeSelection = sharedSession.activeSelection && typeof sharedSession.activeSelection === "object"
+    ? { ...sharedSession.activeSelection }
+    : null;
   let modelRoot = null;
   let bones = [];
   let boneNameMap = new Map();
@@ -1197,6 +1691,149 @@ function buildOverlay(node, widget, stateRef) {
   const HISTORY_LIMIT = 30;
   let cameraSlots = normalizeCameraSlots(sharedSession.cameraSlots);
   let activeCameraIndex = 0;
+  const panelWidths = {
+    left: Math.max(240, Math.min(520, Number(sharedSession.panelWidths?.left || 300))),
+    right: Math.max(280, Math.min(560, Number(sharedSession.panelWidths?.right || 360))),
+  };
+  function normalizeRenderOptions(options = null) {
+    const src = options && typeof options === "object" ? options : {};
+    return {
+      drawHands: Boolean(
+        src.drawHands
+        ?? src.draw_hands
+        ?? src.hands
+        ?? false
+      ),
+      drawFaceMask: Boolean(
+        src.drawFaceMask
+        ?? src.draw_face_mask
+        ?? src.face_mask
+        ?? false
+      ),
+    };
+  }
+
+  function syncRenderOptionInputs() {
+    if (drawHandsToggle) {
+      drawHandsToggle.checked = Boolean(editorRenderOptions.drawHands);
+    }
+    if (drawFaceMaskToggle) {
+      drawFaceMaskToggle.checked = Boolean(editorRenderOptions.drawFaceMask);
+    }
+  }
+
+  function setEditorRenderOptions(options = {}, { captureHistory = true } = {}) {
+    editorRenderOptions = normalizeRenderOptions({
+      ...editorRenderOptions,
+      ...(options && typeof options === "object" ? options : {}),
+    });
+    syncRenderOptionInputs();
+    if (!suppressHistory && captureHistory) {
+      scheduleHistoryCapture(80);
+    }
+  }
+
+  function restoreRenderOptionsFromPayload(payload = null, { captureHistory = false } = {}) {
+    const source = payload?.render_options || payload?.renderOptions;
+    const normalized = source
+      ? normalizeRenderOptions(source)
+      : {
+        drawHands: getBooleanWidgetValue("draw_fingers", false),
+        drawFaceMask: getBooleanWidgetValue("draw_face_mask", false),
+      };
+    setEditorRenderOptions(normalized, { captureHistory });
+  }
+
+  function getSceneObjectRoot(sceneObject) {
+    return sceneObject?.sceneRoot || sceneObject?.meshRoot || null;
+  }
+
+  function getSceneObjectRenderRoot(sceneObject) {
+    return sceneObject?.meshRoot || sceneObject?.sceneRoot || null;
+  }
+
+  function getSceneObjectById(id) {
+    return Array.isArray(sceneObjects)
+      ? sceneObjects.find((obj) => obj?.id === id) || null
+      : null;
+  }
+
+  function getActiveSceneObject() {
+    if (activeSelection?.kind !== "object") return null;
+    return getSceneObjectById(activeSelection.id);
+  }
+
+  function getActiveSceneItem() {
+    if (activeSelection?.kind === "object") {
+      return getActiveSceneObject();
+    }
+    if (activeSelection?.kind === "character") {
+      return characters.find((c) => c.id === activeSelection.id) || getActiveCharacter();
+    }
+    return getActiveCharacter() || getActiveSceneObject() || null;
+  }
+
+  function getSceneItemRoot(item) {
+    if (!item) return null;
+    if (item?.bones && item?.boneNameMap) {
+      return getCharacterSceneRoot(item);
+    }
+    return getSceneObjectRoot(item);
+  }
+
+  function getSceneItemLabel(item) {
+    if (!item) return "(none)";
+    if (item?.bones && item?.boneNameMap) {
+      return `${item.name || "Character"} (${item.bones.length || 0} bones)`;
+    }
+    const shapeLabel = getPrimitiveShapeLabel(item?.shapeType || "object");
+    return `${item.name || "Object"} (${shapeLabel})`;
+  }
+
+  function persistPanelWidths() {
+    sharedSession.panelWidths = {
+      left: panelWidths.left,
+      right: panelWidths.right,
+    };
+  }
+
+  function applyPanelLayout() {
+    main.style.gridTemplateColumns = `${panelWidths.left}px 8px minmax(0, 1fr) 8px ${panelWidths.right}px`;
+    persistPanelWidths();
+    if (threeReady) {
+      window.requestAnimationFrame(() => resizeRenderer());
+    }
+  }
+
+  function enableHorizontalResize(splitter, side) {
+    splitter.addEventListener("pointerdown", (ev) => {
+      ev.preventDefault();
+      const startX = ev.clientX;
+      const startLeft = panelWidths.left;
+      const startRight = panelWidths.right;
+      splitter.classList.add("dragging");
+      splitter.setPointerCapture?.(ev.pointerId);
+      const onMove = (moveEv) => {
+        const delta = moveEv.clientX - startX;
+        if (side === "left") {
+          panelWidths.left = Math.max(240, Math.min(520, startLeft + delta));
+        } else {
+          panelWidths.right = Math.max(280, Math.min(560, startRight - delta));
+        }
+        applyPanelLayout();
+      };
+      const onUp = () => {
+        splitter.classList.remove("dragging");
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        scheduleHistoryCapture(60);
+      };
+      window.addEventListener("pointermove", onMove);
+      window.addEventListener("pointerup", onUp);
+    });
+  }
+
+  applyPanelLayout();
 
   const layoutRendererToFrame = () => {
     if (!renderer || !camera) return;
@@ -1962,14 +2599,21 @@ function buildOverlay(node, widget, stateRef) {
   function clearCharactersFromScene() {
     if (!scene) return;
     characters.forEach((ch) => {
-      if (ch?.modelRoot && ch.modelRoot.parent === scene) scene.remove(ch.modelRoot);
+      const sceneRoot = getCharacterSceneRoot(ch);
+      if (sceneRoot && sceneRoot.parent === scene) scene.remove(sceneRoot);
       if (ch?.skeletonHelper && ch.skeletonHelper.parent === scene) scene.remove(ch.skeletonHelper);
     });
+    sceneObjects.forEach((obj) => {
+      const sceneRoot = getSceneObjectRoot(obj);
+      if (sceneRoot && sceneRoot.parent === scene) scene.remove(sceneRoot);
+    });
     characters = [];
+    sceneObjects = [];
     sharedSession.characters = characters;
-    applyActiveCharacter(null);
-    refreshCharacterTabs();
-    populateBones();
+    sharedSession.sceneObjects = sceneObjects;
+    activeSelection = null;
+    sharedSession.activeSelection = null;
+    applyActiveSceneSelection(null);
   }
 
   async function applyScenePayload(payload, options = {}) {
@@ -1994,20 +2638,38 @@ function buildOverlay(node, widget, stateRef) {
         }
       }
 
-      if (next.active_character_id) {
+      if (Array.isArray(next.objects) && next.objects.length) {
+        next.objects.forEach((obj) => {
+          createPrimitiveSceneObject(obj.shape_type || obj.shapeType || "cube", {
+            id: obj.id,
+            name: obj.name,
+            params: obj.params,
+            colorHex: obj.color_hex || obj.colorHex,
+            transform: obj.scene_transform,
+          });
+        });
+      }
+
+      if (next.active_selection && typeof next.active_selection === "object") {
+        applyActiveSceneSelection(next.active_selection);
+      } else if (next.active_character_id) {
         const active = characters.find((c) => c.id === next.active_character_id) || characters[0] || null;
         applyActiveCharacter(active);
+      } else if (characters[0]) {
+        applyActiveCharacter(characters[0]);
+      } else if (sceneObjects[0]) {
+        applyActiveSceneSelection({ kind: "object", id: sceneObjects[0].id });
       } else {
-        applyActiveCharacter(characters[0] || null);
+        applyActiveSceneSelection(null);
       }
 
       restoreStateAfterLoad();
       refreshCharacterTabs();
-      populateBones();
-      if (!characters.length) {
+      renderSelectionDetails();
+      if (!characters.length && !sceneObjects.length) {
         setStatus("Scene loaded (empty).");
       } else {
-        setStatus(`Scene loaded (${characters.length} character(s)).`);
+        setStatus(`Scene loaded (${characters.length} character(s), ${sceneObjects.length} object(s)).`);
       }
     } finally {
       suppressHistory = false;
@@ -2056,12 +2718,29 @@ function buildOverlay(node, widget, stateRef) {
   const MIRROR_POS_SIGN = { x: -1, y: 1, z: 1 };
 
   function refreshSkinnedMeshes() {
-    if (!modelRoot) return;
-    modelRoot.traverse((child) => {
-      if (child.isSkinnedMesh && child.skeleton) {
-        child.skeleton.update();
-      }
+    characters.forEach((character) => {
+      character?.modelRoot?.traverse?.((child) => {
+        if (child.isSkinnedMesh && child.skeleton) {
+          child.skeleton.update();
+        }
+      });
     });
+  }
+
+  function getFigurePositionTarget() {
+    const activeItem = getActiveSceneItem();
+    return getSceneItemRoot(activeItem);
+  }
+
+  function getTransformValueTarget(kind) {
+    const activeObject = getActiveSceneObject();
+    if (activeObject) {
+      return getSceneObjectRoot(activeObject);
+    }
+    if (kind === "position") {
+      return getFigurePositionTarget();
+    }
+    return selectedBone || getFigurePositionTarget() || null;
   }
 
   function getBoneForOpenPoseIndex(character, openPoseIndex) {
@@ -2200,6 +2879,48 @@ function buildOverlay(node, widget, stateRef) {
     };
   }
 
+  function buildOpenPoseOverlayFromNamedJoints(person, frameRect) {
+    if (!person?.joints3d_named || !frameRect) return null;
+    const imageW = Math.max(1, Number(person?.image_width || 1));
+    const imageH = Math.max(1, Number(person?.image_height || 1));
+    const out = Array.from({ length: OPENPOSE_NAMES.length }, () => null);
+    const setNamed = (index, jointName) => {
+      out[index] = namedJointOverlayPoint(person.joints3d_named, jointName, frameRect, imageW, imageH);
+    };
+
+    setNamed(1, "neck");
+    setNamed(2, "right_shoulder");
+    setNamed(3, "right_elbow");
+    setNamed(4, "right_wrist");
+    setNamed(5, "left_shoulder");
+    setNamed(6, "left_elbow");
+    setNamed(7, "left_wrist");
+    setNamed(8, "right_hip");
+    setNamed(9, "right_knee");
+    setNamed(10, "right_ankle");
+    setNamed(11, "left_hip");
+    setNamed(12, "left_knee");
+    setNamed(13, "left_ankle");
+
+    const kps = Array.isArray(person?.face?.kps) ? person.face.kps : null;
+    if (kps && kps.length >= 5) {
+      const toOverlay = (pt) => {
+        if (!Array.isArray(pt) || pt.length < 2) return null;
+        return detectionPointToOverlay({ x: Number(pt[0]), y: Number(pt[1]) }, frameRect, imageW, imageH);
+      };
+      // Keep OpenPose facial indices in character-space order.
+      out[14] = toOverlay(kps[0]); // right eye in character space appears on image-left
+      out[15] = toOverlay(kps[1]); // left eye in character space appears on image-right
+      out[0] = toOverlay(kps[2]);  // nose
+    }
+
+    if (!out[0]) {
+      setNamed(0, "head");
+    }
+
+    return out;
+  }
+
   function rotateBoneTowardWorldDirection(bone, currentEndWorld, targetDirWorld, maxAngle = null) {
     if (!bone || !currentEndWorld || !targetDirWorld || !three) return false;
     const start = new three.Vector3();
@@ -2277,6 +2998,41 @@ function buildOverlay(node, widget, stateRef) {
     return setBoneWorldQuaternion(bone, newWorldQ);
   }
 
+  function rotateModelRootAroundWorldPivot(character, deltaQ, pivotWorld, fraction = 1.0, maxAngle = null) {
+    const root = getCharacterSceneRoot(character);
+    if (!root || !deltaQ || !pivotWorld || !three) return false;
+    let angle = 2 * Math.acos(Math.max(-1, Math.min(1, deltaQ.w)));
+    if (!Number.isFinite(angle) || angle <= 1e-6) return false;
+    if (angle > Math.PI) angle = (2 * Math.PI) - angle;
+    const axis = new three.Vector3(deltaQ.x, deltaQ.y, deltaQ.z);
+    if (axis.lengthSq() <= 1e-10) return false;
+    axis.normalize();
+    const limitedAngle = Number.isFinite(maxAngle) && maxAngle > 1e-6
+      ? Math.min(angle * Math.max(0, Number(fraction || 0)), maxAngle)
+      : angle * Math.max(0, Number(fraction || 0));
+    if (!Number.isFinite(limitedAngle) || limitedAngle <= 1e-6) return false;
+    const partialDelta = new three.Quaternion().setFromAxisAngle(axis, limitedAngle);
+    const worldPos = new three.Vector3();
+    const worldQ = new three.Quaternion();
+    root.getWorldPosition(worldPos);
+    root.getWorldQuaternion(worldQ);
+    const newWorldPos = worldPos.clone().sub(pivotWorld).applyQuaternion(partialDelta).add(pivotWorld);
+    const newWorldQ = partialDelta.multiply(worldQ).normalize();
+    const parentWorldQ = new three.Quaternion();
+    const parentWorldPos = new three.Vector3();
+    if (root.parent) {
+      root.parent.getWorldQuaternion(parentWorldQ);
+      root.parent.getWorldPosition(parentWorldPos);
+    } else {
+      parentWorldQ.identity();
+      parentWorldPos.set(0, 0, 0);
+    }
+    root.position.copy(newWorldPos.sub(parentWorldPos).applyQuaternion(parentWorldQ.clone().invert()));
+    root.quaternion.copy(parentWorldQ.clone().invert().multiply(newWorldQ).normalize());
+    root.updateMatrixWorld(true);
+    return true;
+  }
+
   function getTorsoDriveBones(character) {
     if (!character?.boneNameMap) return { hipsBone: null, spineBone: null, neckBone: null };
     const hipsBone = findBoneByAliases(character.boneNameMap, [
@@ -2332,7 +3088,7 @@ function buildOverlay(node, widget, stateRef) {
     const nose = toOverlay(kps[2]);
     const leftMouth = toOverlay(kps[3]);
     const rightMouth = toOverlay(kps[4]);
-    const mouth = averageScenePoints([leftMouth, rightMouth]);
+    const mouth = averageOverlayPoints([leftMouth, rightMouth]);
     if (!leftEye || !rightEye || !nose) return null;
     return { leftEye, rightEye, nose, mouth };
   }
@@ -2594,7 +3350,8 @@ function buildOverlay(node, widget, stateRef) {
     const upTarget = (ref.shoulders || ref.neck || ref.head);
     if (!upTarget) return null;
     const upVec = upTarget.clone().sub(ref.pelvis);
-    const forwardHint = new three.Vector3(0, 0, 1).applyQuaternion(character.modelRoot.quaternion).normalize();
+    const root = getCharacterSceneRoot(character);
+    const forwardHint = new three.Vector3(0, 0, 1).applyQuaternion(root?.quaternion || new three.Quaternion()).normalize();
     return buildBasisQuaternion(rightVec, upVec, forwardHint);
   }
 
@@ -2629,7 +3386,8 @@ function buildOverlay(node, widget, stateRef) {
   }
 
   function applyCharacterRootOrientation(character, namedJoints) {
-    if (!character?.modelRoot || !three) return false;
+    const root = getCharacterSceneRoot(character);
+    if (!root || !three) return false;
     const currentBasis = getCharacterTorsoBasis(character);
     const targetBasis = getTargetTorsoBasis(namedJoints);
     if (!currentBasis || !targetBasis) return false;
@@ -2646,13 +3404,14 @@ function buildOverlay(node, widget, stateRef) {
     if (!Number.isFinite(angle) || Math.abs(angle) <= 1e-5) return false;
     const delta = new three.Quaternion().setFromAxisAngle(new three.Vector3(0, 1, 0), angle);
     if (!Number.isFinite(delta.x + delta.y + delta.z + delta.w)) return false;
-    character.modelRoot.quaternion.premultiply(delta).normalize();
-    character.modelRoot.updateMatrixWorld(true);
+    root.quaternion.premultiply(delta).normalize();
+    root.updateMatrixWorld(true);
     return true;
   }
 
   function applyCharacterTorsoOrientation(character, namedJoints) {
-    if (!character?.modelRoot || !three) return false;
+    const root = getCharacterSceneRoot(character);
+    if (!root || !three) return false;
     const currentBasis = getCharacterTorsoBasis(character);
     const targetBasis = getTargetTorsoBasis(namedJoints);
     if (!currentBasis || !targetBasis) return false;
@@ -2669,13 +3428,14 @@ function buildOverlay(node, widget, stateRef) {
       applied = applyPartialWorldRotationDelta(neckBone, delta, 0.35, 0.25) || applied;
     }
     if (applied) {
-      character.modelRoot.updateMatrixWorld(true);
+      root.updateMatrixWorld(true);
     }
     return applied;
   }
 
   function applyCharacterScreenLean(person, character) {
-    if (!character?.modelRoot || !person?.joints3d_named || !three || !camera || !viewport) return false;
+    const root = getCharacterSceneRoot(character);
+    if (!root || !person?.joints3d_named || !three || !camera || !viewport) return false;
     const width = Math.max(64, Math.round(viewport?.clientWidth || 1024));
     const height = Math.max(64, Math.round(viewport?.clientHeight || 768));
     const frameRect = getRenderFrameRect(width, height);
@@ -2721,14 +3481,18 @@ function buildOverlay(node, widget, stateRef) {
     const leanQ = new three.Quaternion().setFromAxisAngle(cameraForward, leanDelta);
     const { hipsBone, spineBone } = getTorsoDriveBones(character);
     let applied = false;
+    const pivotWorld = getCharacterReferencePose(character)?.pelvis;
+    if (pivotWorld) {
+      applied = rotateModelRootAroundWorldPivot(character, leanQ, pivotWorld, 0.58, 0.28) || applied;
+    }
     if (hipsBone) {
-      applied = applyPartialWorldRotationDelta(hipsBone, leanQ, 0.9, 0.34) || applied;
+      applied = applyPartialWorldRotationDelta(hipsBone, leanQ, 0.54, 0.22) || applied;
     }
     if (spineBone) {
-      applied = applyPartialWorldRotationDelta(spineBone, leanQ, 0.28, 0.14) || applied;
+      applied = applyPartialWorldRotationDelta(spineBone, leanQ, 0.38, 0.18) || applied;
     }
     if (applied) {
-      character.modelRoot.updateMatrixWorld(true);
+      root.updateMatrixWorld(true);
     }
     return applied;
   }
@@ -2790,8 +3554,10 @@ function buildOverlay(node, widget, stateRef) {
     // Mesh selection should carry most body-shape variation; non-uniform root scaling
     // creates stretched feet/hands and skewed silhouettes.
     const uniformRatio = Math.max(0.3, Math.min(3.0, ((heightRatio * 2.0) + widthRatio) / 3.0));
-    character.modelRoot.scale.set(uniformRatio, uniformRatio, uniformRatio);
-    character.modelRoot.updateMatrixWorld(true);
+    const root = getCharacterSceneRoot(character);
+    if (!root) return;
+    root.scale.set(uniformRatio, uniformRatio, uniformRatio);
+    root.updateMatrixWorld(true);
   }
 
   function setCharacterPelvisTo(character, targetPelvis) {
@@ -2799,8 +3565,10 @@ function buildOverlay(node, widget, stateRef) {
     const ref = getCharacterReferencePose(character);
     if (!ref?.pelvis) return;
     const delta = targetPelvis.clone().sub(ref.pelvis);
-    character.modelRoot.position.add(delta);
-    character.modelRoot.updateMatrixWorld(true);
+    const root = getCharacterSceneRoot(character);
+    if (!root) return;
+    root.position.add(delta);
+    root.updateMatrixWorld(true);
   }
 
   function applyAdvancedPoseToCharacter(person, character) {
@@ -2875,12 +3643,28 @@ function buildOverlay(node, widget, stateRef) {
           applied += 1;
         }
       }
-      character.modelRoot.updateMatrixWorld(true);
+      getCharacterSceneRoot(character)?.updateMatrixWorld(true);
     }
 
     if (hasFaceDrivenHead && applyFaceDrivenHeadOrientation(person, character)) {
       applied += 1;
-      character.modelRoot.updateMatrixWorld(true);
+      getCharacterSceneRoot(character)?.updateMatrixWorld(true);
+    }
+
+    // Refine the visible final pose against the exact 2D projected model structure shown in the
+    // init dialog's Model pane. Using source OpenPose points here drifts the rig toward a
+    // different target than the one the user is visually comparing against.
+    const projectedModelOverlay = buildOpenPoseOverlayFromNamedJoints(person, frameRect);
+    if (projectedModelOverlay && projectedModelOverlay.some(Boolean)) {
+      try {
+        applyOverlayPoseToCharacter(
+          projectedModelOverlay,
+          character,
+          { adjustCamera: false, skipHeadSegment: hasFaceDrivenHead },
+        );
+      } catch (err) {
+        console.warn("Projected model refinement pass failed", err);
+      }
     }
 
     if (!applied) {
@@ -2972,16 +3756,14 @@ function buildOverlay(node, widget, stateRef) {
     readCurrentCameraToSlot(activeCameraIndex);
   }
 
-  function applyDetectedPoseToCharacter(detectionPayload, targetCharacter = null) {
+  function applyOverlayPoseToCharacter(targetOverlayPoints, targetCharacter = null, options = {}) {
     const active = targetCharacter || getActiveCharacter();
     if (!active || !Array.isArray(active.bones) || !active.bones.length) {
       throw new Error("No active character loaded.");
     }
-    const points = Array.isArray(detectionPayload?.keypoints_openpose18)
-      ? detectionPayload.keypoints_openpose18
-      : null;
+    const points = Array.isArray(targetOverlayPoints) ? targetOverlayPoints : null;
     if (!points || !points.length) {
-      throw new Error("Pose payload does not contain keypoints.");
+      throw new Error("Pose overlay payload does not contain keypoints.");
     }
 
     syncProjectionState();
@@ -3001,14 +3783,15 @@ function buildOverlay(node, widget, stateRef) {
     const targetWorld = Array.from({ length: OPENPOSE_NAMES.length }, () => null);
     for (let i = 0; i < OPENPOSE_NAMES.length; i += 1) {
       const point = points[i];
-      const conf = Number(point?.confidence ?? 0);
-      if (!point || !Number.isFinite(conf) || conf < 0.05) continue;
-      const ov = detectionPointToOverlay(
-        point,
-        frameRect,
-        Number(detectionPayload?.image_width || 0),
-        Number(detectionPayload?.image_height || 0),
-      );
+      if (!point) continue;
+      const ov = Number.isFinite(point?.x) && Number.isFinite(point?.y)
+        ? { x: Number(point.x), y: Number(point.y) }
+        : detectionPointToOverlay(
+            point,
+            frameRect,
+            Number(options.imageWidth || 0),
+            Number(options.imageHeight || 0),
+          );
       if (!ov) continue;
       detectionOverlay[i] = ov;
       const depth = Number.isFinite(worldDepthOnCameraForward(worldNow[i])) && worldDepthOnCameraForward(worldNow[i]) > 0.01
@@ -3017,6 +3800,48 @@ function buildOverlay(node, widget, stateRef) {
       const wp = overlayPointToWorldAtDepth(ov.x, ov.y, frameRect, depth);
       if (wp) {
         targetWorld[i] = wp;
+      }
+    }
+
+    const currentTorso2d = getCharacterReferencePose2d(active, viewportW, viewportH, frameRect);
+    const targetPelvis2d = averageOverlayPoints([detectionOverlay[8], detectionOverlay[11]]);
+    const targetUpper2d = averageOverlayPoints([detectionOverlay[1], detectionOverlay[2], detectionOverlay[5]]);
+    if (currentTorso2d?.pelvis && currentTorso2d?.upper && targetPelvis2d && targetUpper2d) {
+      const currentVec = new three.Vector2(
+        currentTorso2d.upper.x - currentTorso2d.pelvis.x,
+        currentTorso2d.upper.y - currentTorso2d.pelvis.y,
+      );
+      const targetVec = new three.Vector2(
+        targetUpper2d.x - targetPelvis2d.x,
+        targetUpper2d.y - targetPelvis2d.y,
+      );
+      if (currentVec.lengthSq() > 1e-8 && targetVec.lengthSq() > 1e-8) {
+        const wrapAngle = (a) => {
+          let out = a;
+          while (out > Math.PI) out -= Math.PI * 2;
+          while (out < -Math.PI) out += Math.PI * 2;
+          return out;
+        };
+        const leanDelta = Math.max(
+          -0.5,
+          Math.min(0.5, wrapAngle(Math.atan2(targetVec.y, targetVec.x) - Math.atan2(currentVec.y, currentVec.x))),
+        );
+        const cameraForward = getCameraForwardVector();
+        if (cameraForward && Number.isFinite(leanDelta) && Math.abs(leanDelta) > 1e-4) {
+          const leanQ = new three.Quaternion().setFromAxisAngle(cameraForward, leanDelta);
+          const pivotWorld = getCharacterReferencePose(active)?.pelvis;
+          const { hipsBone, spineBone } = getTorsoDriveBones(active);
+          if (pivotWorld) {
+            rotateModelRootAroundWorldPivot(active, leanQ, pivotWorld, 0.62, 0.3);
+          }
+          if (hipsBone) {
+            applyPartialWorldRotationDelta(hipsBone, leanQ, 0.45, 0.18);
+          }
+          if (spineBone) {
+            applyPartialWorldRotationDelta(spineBone, leanQ, 0.42, 0.18);
+          }
+          active.modelRoot?.updateMatrixWorld?.(true);
+        }
       }
     }
 
@@ -3030,8 +3855,10 @@ function buildOverlay(node, widget, stateRef) {
       { from: 9, to: 10, drive: 9 },
       { from: 11, to: 12, drive: 11 },
       { from: 12, to: 13, drive: 12 },
-      { from: 1, to: 0, drive: 1 },
     ];
+    if (!options.skipHeadSegment) {
+      segments.push({ from: 1, to: 0, drive: 1 });
+    }
 
     let applied = 0;
     for (let iter = 0; iter < 2; iter += 1) {
@@ -3056,10 +3883,26 @@ function buildOverlay(node, widget, stateRef) {
       throw new Error("Could not map detected pose to current rig.");
     }
 
-    applyCameraHintFromDetection(detectionOverlay, frameRect, active);
+    if (options.adjustCamera !== false) {
+      applyCameraHintFromDetection(detectionOverlay, frameRect, active);
+    }
     refreshSkinnedMeshes();
     syncInputsFromBone();
     scheduleHistoryCapture(90);
+  }
+
+  function applyDetectedPoseToCharacter(detectionPayload, targetCharacter = null, options = {}) {
+    const points = Array.isArray(detectionPayload?.keypoints_openpose18)
+      ? detectionPayload.keypoints_openpose18
+      : null;
+    if (!points || !points.length) {
+      throw new Error("Pose payload does not contain keypoints.");
+    }
+    return applyOverlayPoseToCharacter(points, targetCharacter, {
+      ...options,
+      imageWidth: Number(detectionPayload?.image_width || 0),
+      imageHeight: Number(detectionPayload?.image_height || 0),
+    });
   }
 
   let riggedMeshListCache = null;
@@ -3102,18 +3945,67 @@ function buildOverlay(node, widget, stateRef) {
     if (!items.length) return null;
     const lc = new Set(items.map((n) => n.toLowerCase()));
     const has = (name) => (name && lc.has(String(name).toLowerCase())) ? items.find((m) => m.toLowerCase() === String(name).toLowerCase()) : null;
+    const meshTokens = (name) => String(name || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((token) => (token === "chil" ? "child" : token));
+    const matchesKeywords = (name, include = [], exclude = []) => {
+      const tokens = new Set(meshTokens(name));
+      return include.every((token) => tokens.has(token))
+        && exclude.every((token) => !tokens.has(token));
+    };
+    const findMatching = (patterns) => {
+      for (const pattern of patterns) {
+        const found = items.find((name) => matchesKeywords(
+          name,
+          pattern.include || [],
+          pattern.exclude || [],
+        ));
+        if (found) return found;
+      }
+      return null;
+    };
 
     const suggestion = has(person?.mesh_suggestion);
     if (suggestion) return suggestion;
 
     const gender = String(person?.gender || "unknown").toLowerCase();
+    const stage = String(person?.life_stage || "adult").toLowerCase();
     const tryList = [];
-    if (gender === "male") {
-      tryList.push("male_young.fbx");
-    } else {
-      tryList.push("female_young.fbx");
-    }
-    tryList.push("female_young.fbx", "male_young.fbx");
+    const keywordMatch = findMatching([
+      ...(gender === "male" && stage !== "adult" ? [{ include: ["child", "male"] }] : []),
+      ...(gender !== "male" && stage !== "adult" ? [{ include: ["teen", "female"] }] : []),
+      ...(gender === "male" ? [
+        { include: ["adult", "male"], exclude: ["fat", "muscle"] },
+        { include: ["adult", "male", "muscle"] },
+        { include: ["adult", "male", "fat"] },
+      ] : []),
+      ...(gender === "female" ? [
+        { include: ["adult", "female"] },
+      ] : []),
+      ...(gender !== "male" && gender !== "female" ? [
+        ...(stage !== "adult" ? [
+          { include: ["teen", "female"] },
+          { include: ["child", "male"] },
+        ] : []),
+        { include: ["adult", "female"] },
+        { include: ["adult", "male"], exclude: ["fat", "muscle"] },
+        { include: ["adult", "male", "muscle"] },
+        { include: ["adult", "male", "fat"] },
+      ] : []),
+    ]);
+    if (keywordMatch) return keywordMatch;
+
+    tryList.push(
+      "MQ adult female.fbx",
+      "MQ adult male.fbx",
+      "MQ teen female.fbx",
+      "MQ chil male.fbx",
+      "MQ adult male muscle.fbx",
+      "MQ adult male fat.fbx",
+    );
     for (const n of tryList) {
       const ok = has(n);
       if (ok) return ok;
@@ -3122,11 +4014,12 @@ function buildOverlay(node, widget, stateRef) {
   }
 
   function computeAllCharactersBounds() {
-    if (!three || !Array.isArray(characters) || !characters.length) return null;
+    if (!three) return null;
     let union = null;
-    characters.forEach((ch) => {
-      if (!ch?.modelRoot) return;
-      const box = computeModelBounds(ch.modelRoot);
+    [...characters, ...sceneObjects].forEach((item) => {
+      const root = item?.bones ? item.modelRoot : getSceneObjectRenderRoot(item);
+      if (!root) return;
+      const box = computeModelBounds(root);
       if (!box) return;
       if (!union) {
         union = box.clone();
@@ -3179,8 +4072,10 @@ function buildOverlay(node, widget, stateRef) {
         -minY,
         depthDelta - center.z * 0.25,
       );
-      character.modelRoot.position.add(shift);
-      character.modelRoot.updateMatrixWorld(true);
+      const root = getCharacterSceneRoot(character);
+      if (!root) return;
+      root.position.add(shift);
+      root.updateMatrixWorld(true);
     });
   }
 
@@ -3283,7 +4178,7 @@ function buildOverlay(node, widget, stateRef) {
     if (String(payload?.engine || "") === "advanced_multihmr" && advancedPersons.length) {
       const available = await getRiggedMeshList();
       if (!available.length) {
-        throw new Error("No rigged meshes found in meshes/human_rig.");
+        throw new Error("No rigged meshes found in meshes/fbx.");
       }
 
       clearCharactersFromScene();
@@ -3332,7 +4227,7 @@ function buildOverlay(node, widget, stateRef) {
 
     const available = await getRiggedMeshList();
     if (!available.length) {
-      throw new Error("No rigged meshes found in meshes/human_rig.");
+      throw new Error("No rigged meshes found in meshes/fbx.");
     }
 
     clearCharactersFromScene();
@@ -3412,15 +4307,27 @@ function buildOverlay(node, widget, stateRef) {
   }
 
   function updateTransformContextUI() {
-    if (!selectedBone) {
-      selectedBoneInfo.textContent = "Selected: (none)";
+    const activeObject = getActiveSceneObject();
+    if (activeObject) {
+      selectedBoneInfo.textContent = `Selected: ${activeObject.name || "Object"} | Transforming object root`;
       mirroredBone = null;
       mirrorEnabled = false;
       mirrorCheck.checked = false;
       mirrorWrap.style.display = "none";
       return;
     }
-    selectedBoneInfo.textContent = `Selected: ${selectedBone.name || "(unnamed)"}`;
+    if (!selectedBone) {
+      const activeCharacter = getActiveCharacter();
+      selectedBoneInfo.textContent = activeCharacter
+        ? `Selected: ${activeCharacter.name || "Character"} | Transforming figure root`
+        : "Selected: (none)";
+      mirroredBone = null;
+      mirrorEnabled = false;
+      mirrorCheck.checked = false;
+      mirrorWrap.style.display = "none";
+      return;
+    }
+    selectedBoneInfo.textContent = `Selected: ${selectedBone.name || "(unnamed)"} | Position controls move whole figure`;
     const pair = findMirroredBoneForSelection();
     mirroredBone = pair;
     if (pair) {
@@ -3599,7 +4506,7 @@ function buildOverlay(node, widget, stateRef) {
       rear: cache.local.rear.clone().applyMatrix4(m),
       lear: cache.local.lear.clone().applyMatrix4(m),
     };
-    const earTighten = 0.34;
+    const earTighten = 0.18;
     world.rear.lerp(world.reye, earTighten);
     world.lear.lerp(world.leye, earTighten);
     return world;
@@ -3621,12 +4528,181 @@ function buildOverlay(node, widget, stateRef) {
     return points2d;
   }
 
-  function applyActiveCharacter(character) {
+  function removeCharacterFromScene(character) {
+    if (!character) return;
+    const sceneRoot = getCharacterSceneRoot(character);
+    if (sceneRoot) scene?.remove?.(sceneRoot);
+    if (character.skeletonHelper) scene?.remove?.(character.skeletonHelper);
+    characters = characters.filter((entry) => entry?.id !== character.id);
+    sharedSession.characters = characters;
+    if (activeCharacterId === character.id) {
+      activeCharacterId = characters[0]?.id || null;
+      sharedSession.activeCharacterId = activeCharacterId;
+    }
+  }
+
+  function removeSceneObjectFromScene(sceneObject) {
+    if (!sceneObject) return;
+    const sceneRoot = getSceneObjectRoot(sceneObject);
+    if (sceneRoot) scene?.remove?.(sceneRoot);
+    sceneObjects = sceneObjects.filter((entry) => entry?.id !== sceneObject.id);
+    sharedSession.sceneObjects = sceneObjects;
+  }
+
+  function buildObjectParameterRows(sceneObject) {
+    const wrap = document.createElement("div");
+    wrap.style.display = "flex";
+    wrap.style.flexDirection = "column";
+    wrap.style.gap = "8px";
+
+    const appendInfoRow = (parent, labelText, valueText) => {
+      const row = document.createElement("div");
+      row.className = "ess-pose-info-row";
+      const label = document.createElement("span");
+      label.textContent = labelText;
+      const value = document.createElement("code");
+      value.textContent = valueText;
+      row.append(label, value);
+      parent.appendChild(row);
+    };
+
+    const hierarchyHint = document.createElement("div");
+    hierarchyHint.className = "ess-pose-hint";
+    hierarchyHint.textContent = "Hierarchy";
+    const hierarchyCard = document.createElement("div");
+    hierarchyCard.className = "ess-pose-info-card";
+    appendInfoRow(hierarchyCard, "Root", sceneObject.sceneRoot?.name || `${sceneObject.name || "Object"} Root`);
+    appendInfoRow(hierarchyCard, "Mesh", sceneObject.meshRoot?.name || `${getPrimitiveShapeLabel(sceneObject.shapeType)} Mesh`);
+    appendInfoRow(hierarchyCard, "Type", getPrimitiveShapeLabel(sceneObject.shapeType));
+    wrap.append(hierarchyHint, hierarchyCard);
+
+    const paramsHint = document.createElement("div");
+    paramsHint.className = "ess-pose-hint";
+    paramsHint.textContent = "Shape parameters";
+    wrap.appendChild(paramsHint);
+
+    const makeNumberRow = (labelText, key, min, max, step) => {
+      const row = document.createElement("div");
+      row.className = "ess-pose-param-row";
+      const label = document.createElement("span");
+      label.textContent = labelText;
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = String(min);
+      input.max = String(max);
+      input.step = String(step);
+      input.value = String(sceneObject.params[key] ?? "");
+      input.addEventListener("change", () => {
+        const next = Number(input.value);
+        if (!Number.isFinite(next)) return;
+        sceneObject.params[key] = Math.max(min, Math.min(max, next));
+        rebuildSceneObjectGeometry(sceneObject);
+        sceneObject.sceneRoot.updateMatrixWorld(true);
+        updateOrbitDistanceLimits();
+        scheduleHistoryCapture(80);
+      });
+      row.append(label, input);
+      return row;
+    };
+
+    const shapeRow = document.createElement("div");
+    shapeRow.className = "ess-pose-param-row";
+    const shapeLabel = document.createElement("span");
+    shapeLabel.textContent = "Shape";
+    const shapeSelect = document.createElement("select");
+    PRIMITIVE_SHAPES.forEach((shape) => {
+      const option = document.createElement("option");
+      option.value = shape.type;
+      option.textContent = shape.label;
+      option.selected = shape.type === sceneObject.shapeType;
+      shapeSelect.appendChild(option);
+    });
+    shapeSelect.addEventListener("change", () => {
+      sceneObject.shapeType = shapeSelect.value;
+      sceneObject.params = {
+        ...getPrimitiveDefaults(sceneObject.shapeType),
+      };
+      rebuildSceneObjectGeometry(sceneObject);
+      refreshCharacterTabs();
+      renderSelectionDetails();
+      scheduleHistoryCapture(80);
+    });
+    shapeRow.append(shapeLabel, shapeSelect);
+    wrap.appendChild(shapeRow);
+
+    const type = String(sceneObject.shapeType || "cube");
+    if (type === "sphere") {
+      wrap.appendChild(makeNumberRow("Radius", "radius", 0.05, 4, 0.01));
+    } else if (type === "cylinder") {
+      wrap.appendChild(makeNumberRow("Radius Top", "radiusTop", 0.03, 4, 0.01));
+      wrap.appendChild(makeNumberRow("Radius Bottom", "radiusBottom", 0.03, 4, 0.01));
+      wrap.appendChild(makeNumberRow("Height", "height", 0.08, 8, 0.01));
+    } else if (type === "spherocylinder") {
+      wrap.appendChild(makeNumberRow("Radius", "radius", 0.04, 4, 0.01));
+      wrap.appendChild(makeNumberRow("Height", "height", 0.08, 8, 0.01));
+    } else if (type === "torus") {
+      wrap.appendChild(makeNumberRow("Radius", "radius", 0.08, 4, 0.01));
+      wrap.appendChild(makeNumberRow("Tube", "tube", 0.02, 2, 0.01));
+    } else {
+      wrap.appendChild(makeNumberRow("Width", "width", 0.05, 8, 0.01));
+      wrap.appendChild(makeNumberRow("Height", "height", 0.05, 8, 0.01));
+      wrap.appendChild(makeNumberRow("Depth", "depth", 0.05, 8, 0.01));
+    }
+    return wrap;
+  }
+
+  function renderSelectionDetails() {
+    selectionExtraWrap.innerHTML = "";
+    boneList.style.display = "none";
+    boneList.innerHTML = "";
+    const activeItem = getActiveSceneItem();
+    if (!activeItem) {
+      detailsTitle.textContent = "Selection";
+      selectionSummary.textContent = "Select a character or object from the scene tree.";
+      return;
+    }
+    selectionSummary.textContent = getSceneItemLabel(activeItem);
+    if (activeSelection?.kind === "character") {
+      detailsTitle.textContent = "Character Details";
+      const overlayTitle = document.createElement("div");
+      overlayTitle.className = "ess-pose-hint";
+      overlayTitle.textContent = "Character options";
+      const overlayWrap = document.createElement("div");
+      overlayWrap.style.display = "flex";
+      overlayWrap.style.flexDirection = "column";
+      overlayWrap.style.gap = "6px";
+      overlayWrap.append(handsOverlayControl.wrap, faceOverlayControl.wrap);
+      const skeletonTitle = document.createElement("div");
+      skeletonTitle.className = "ess-pose-hint";
+      skeletonTitle.textContent = "Skeleton";
+      selectionExtraWrap.append(overlayTitle, overlayWrap, skeletonTitle);
+      boneList.style.display = "block";
+      populateBones();
+      return;
+    }
+    detailsTitle.textContent = "Object Details";
+    selectionExtraWrap.append(buildObjectParameterRows(activeItem));
+  }
+
+  function applyActiveSceneSelection(selection = null) {
     const prevSelectedBoneUuid = selectedBone?.uuid || null;
-    const ch = character || getActiveCharacter();
-    if (!ch) {
-      activeCharacterId = null;
-      sharedSession.activeCharacterId = null;
+    const requested = selection && typeof selection === "object" ? selection : null;
+    const targetKind = requested?.kind || null;
+    const targetCharacter = targetKind === "character"
+      ? (characters.find((c) => c.id === requested.id) || null)
+      : null;
+    const targetObject = targetKind === "object"
+      ? getSceneObjectById(requested.id)
+      : null;
+    const target = targetCharacter || targetObject || null;
+
+    if (!target) {
+      activeSelection = null;
+      sharedSession.activeSelection = null;
+      if (!characters.length) {
+        activeCharacterId = null;
+        sharedSession.activeCharacterId = null;
+      }
       modelRoot = null;
       bones = [];
       boneNameMap = new Map();
@@ -3634,129 +4710,118 @@ function buildOverlay(node, widget, stateRef) {
       resetMirrorSelectionState();
       updateSelectedBoneVisuals();
       modelBadge.textContent = "No model loaded";
-      boneList.innerHTML = "";
       transform?.detach?.();
+      refreshCharacterTabs();
       syncInputsFromBone();
-      updateCharacterTabStyles();
+      renderSelectionDetails();
       return;
     }
-    activeCharacterId = ch.id;
-    modelRoot = ch.modelRoot;
-    bones = ch.bones || [];
-    boneNameMap = ch.boneNameMap || new Map();
-    selectedBone = ch.selectedBone || bones[0] || null;
-    if ((selectedBone?.uuid || null) !== prevSelectedBoneUuid) {
-      resetMirrorSelectionState();
-    }
-    if (selectedBone) {
-      transform?.attach?.(selectedBone);
+
+    if (targetCharacter) {
+      activeSelection = { kind: "character", id: targetCharacter.id };
+      sharedSession.activeSelection = activeSelection;
+      activeCharacterId = targetCharacter.id;
+      sharedSession.activeCharacterId = activeCharacterId;
+      modelRoot = targetCharacter.modelRoot;
+      bones = targetCharacter.bones || [];
+      boneNameMap = targetCharacter.boneNameMap || new Map();
+      selectedBone = targetCharacter.selectedBone || bones[0] || null;
+      if ((selectedBone?.uuid || null) !== prevSelectedBoneUuid) {
+        resetMirrorSelectionState();
+      }
+      if (selectedBone) {
+        transform?.attach?.(selectedBone);
+      } else {
+        transform?.attach?.(getCharacterSceneRoot(targetCharacter));
+      }
+      modelBadge.textContent = `${targetCharacter.name} (${bones.length} bones)`;
     } else {
-      transform?.detach?.();
+      activeSelection = { kind: "object", id: targetObject.id };
+      sharedSession.activeSelection = activeSelection;
+      modelRoot = getSceneObjectRenderRoot(targetObject);
+      bones = [];
+      boneNameMap = new Map();
+      selectedBone = null;
+      resetMirrorSelectionState();
+      transform?.attach?.(getSceneObjectRoot(targetObject));
+      modelBadge.textContent = getSceneItemLabel(targetObject);
     }
+
     updateSelectedBoneVisuals();
-    modelBadge.textContent = `${ch.name} (${bones.length} bones)`;
-    sharedSession.activeCharacterId = activeCharacterId;
     updateOrbitDistanceLimits();
+    refreshCharacterTabs();
     syncInputsFromBone();
-    updateCharacterTabStyles();
+    renderSelectionDetails();
+  }
+
+  function applyActiveCharacter(character) {
+    const ch = character || getActiveCharacter();
+    applyActiveSceneSelection(ch ? { kind: "character", id: ch.id } : null);
   }
 
   function updateCharacterTabStyles() {
-    Array.from(characterTabs.querySelectorAll("button[data-char-id]")).forEach((tab) => {
-      const isActive = tab.dataset.charId === String(activeCharacterId || "");
-      tab.style.background = isActive ? "#29456a" : "#1a2230";
-      tab.style.color = "#d6d6d6";
-    });
+    refreshCharacterTabs();
   }
 
   function refreshCharacterTabs() {
-    characterTabs.innerHTML = "";
-    characters.forEach((ch, idx) => {
-      const wrap = document.createElement("div");
-      wrap.style.display = "flex";
-      wrap.style.flexDirection = "column";
-      wrap.style.alignItems = "stretch";
-      wrap.style.border = "1px solid #2a303b";
-      wrap.style.borderRadius = "6px";
-      wrap.style.overflow = "hidden";
-
-      const tab = document.createElement("button");
-      tab.textContent = ch.name || `Char ${idx + 1}`;
-      tab.title = ch.name || `Char ${idx + 1}`;
-      tab.style.writingMode = "vertical-rl";
-      tab.style.transform = "rotate(180deg)";
-      tab.style.padding = "8px 4px";
-      tab.style.border = "none";
-      tab.style.cursor = "pointer";
-      tab.dataset.charId = String(ch.id);
-      tab.style.background = ch.id === activeCharacterId ? "#29456a" : "#1a2230";
-      tab.style.color = "#d6d6d6";
-      tab.addEventListener("click", () => {
-        applyActiveCharacter(ch);
-        updateCharacterTabStyles();
-        populateBones();
-      });
-
-      const del = document.createElement("button");
-      del.textContent = "x";
-      del.style.border = "none";
-      del.style.cursor = "pointer";
-      del.style.background = "#3a1f28";
-      del.style.color = "#f0c5d0";
-      del.style.padding = "2px 0";
-      del.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        if (characters.length <= 1) {
-          characters = [];
-        } else {
-          characters = characters.filter((c) => c.id !== ch.id);
-        }
-        if (ch.modelRoot) scene?.remove?.(ch.modelRoot);
-        if (ch.skeletonHelper) scene?.remove?.(ch.skeletonHelper);
-        sharedSession.characters = characters;
-        applyActiveCharacter(characters[0] || null);
-        refreshCharacterTabs();
-        populateBones();
-        scheduleHistoryCapture(120);
-      });
-
-      wrap.append(tab, del);
-      characterTabs.appendChild(wrap);
-    });
-
-    const addBtn = document.createElement("button");
-    addBtn.textContent = "+";
-    addBtn.title = "Add character from meshes/human_rig";
-    addBtn.style.border = "1px solid #2a303b";
-    addBtn.style.borderRadius = "6px";
-    addBtn.style.background = "#1d2b40";
-    addBtn.style.color = "#d6e8ff";
-    addBtn.style.cursor = "pointer";
-    addBtn.style.padding = "6px 0";
-    addBtn.addEventListener("click", async () => {
-      try {
-        const items = await getRiggedMeshList();
-        if (!items.length) {
-          setStatus("No rigged meshes found in meshes/human_rig.");
-          return;
-        }
-        const selectedName = await pickRiggedMeshName(items);
-        if (!selectedName) return;
-        if (!items.includes(selectedName)) {
-          setStatus("Selected mesh is not in repository list.");
-          return;
-        }
-        const buf = await fetchRiggedMeshBuffer(selectedName);
-        await loadModelFromFile({ name: selectedName, arrayBuffer: async () => buf }, buf);
-      } catch (err) {
-        setStatus(`Failed repository load: ${err?.message || err}`);
+    sceneTree.innerHTML = "";
+    const buildSection = (titleText, items, kind) => {
+      const section = document.createElement("div");
+      section.className = "ess-pose-tree-section";
+      const title = document.createElement("h5");
+      title.textContent = titleText;
+      section.appendChild(title);
+      if (!items.length) {
+        const empty = document.createElement("div");
+        empty.className = "ess-pose-hint";
+        empty.textContent = kind === "character" ? "No characters yet." : "No objects yet.";
+        section.appendChild(empty);
+        return section;
       }
-    });
-    characterTabs.appendChild(addBtn);
-    updateCharacterTabStyles();
+      items.forEach((item, idx) => {
+        const row = document.createElement("div");
+        row.className = "ess-pose-tree-row";
+        const button = document.createElement("button");
+        button.className = "ess-pose-tree-btn";
+        button.textContent = item.name || `${kind === "character" ? "Character" : "Object"} ${idx + 1}`;
+        button.title = getSceneItemLabel(item);
+        button.classList.toggle("active", activeSelection?.kind === kind && activeSelection?.id === item.id);
+        button.addEventListener("click", () => {
+          applyActiveSceneSelection({ kind, id: item.id });
+        });
+        const del = document.createElement("button");
+        del.className = "ess-pose-tree-delete";
+        del.textContent = "x";
+        del.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          if (kind === "character") {
+            removeCharacterFromScene(item);
+          } else {
+            removeSceneObjectFromScene(item);
+          }
+          const nextSelection = kind === "object"
+            ? (sceneObjects[0]
+              ? { kind: "object", id: sceneObjects[0].id }
+              : (characters[0] ? { kind: "character", id: characters[0].id } : null))
+            : (characters[0]
+              ? { kind: "character", id: characters[0].id }
+              : (sceneObjects[0] ? { kind: "object", id: sceneObjects[0].id } : null));
+          applyActiveSceneSelection(nextSelection);
+          scheduleHistoryCapture(120);
+        });
+        row.append(button, del);
+        section.appendChild(row);
+      });
+      return section;
+    };
+
+    sceneTree.append(
+      buildSection("Characters", characters, "character"),
+      buildSection("Objects", sceneObjects, "object"),
+    );
   }
 
-  function captureSkeletonPreviewForSlot(slotIdx) {
+  function captureSkeletonPreviewForSlot(slotIdx, renderOptions = null) {
     if (!renderer || !camera || !orbit) return "";
     const idx = 0;
     const slot = normalizeCameraSlot(cameraSlots[idx], "Camera");
@@ -3787,11 +4852,13 @@ function buildOverlay(node, widget, stateRef) {
     ctx.fillStyle = "#000000";
     ctx.fillRect(0, 0, outW, outH);
     const strokeStyle = getOpenPoseStrokeStyle(outW, outH);
+    const drawOptions = renderOptions || getOpenPoseRenderOptions();
     const drawCharacters = getPoseDrawCharacters();
     if (drawCharacters.length) {
       drawCharacters.forEach((ch) => {
         const pose2d = computeOpenPosePositions2d(outW, outH, null, ch);
         drawOpenPoseSkeleton(ctx, pose2d, strokeStyle);
+        drawOpenPoseHandsAndFace(ctx, ch, outW, outH, null, strokeStyle, drawOptions);
       });
     } else {
       const positionsOut = computeOpenPosePositions2d(outW, outH);
@@ -3813,49 +4880,341 @@ function buildOverlay(node, widget, stateRef) {
 
   function captureAllSkeletonPreviews() {
     readCurrentCameraToSlot(activeCameraIndex);
-    const previews = [captureSkeletonPreviewForSlot(0)];
+    const previews = [captureSkeletonPreviewForSlot(0, getOpenPoseRenderOptions())];
     applySlotToCamera(activeCameraIndex);
     return previews;
   }
 
-  function buildEdgeCanvasFromCanvas(sourceCanvas) {
+  function decodeLinearDistanceFromDepthGray(depthGray, near, far) {
+    const perspectiveDepth = 1 - Math.max(0, Math.min(1, Number(depthGray || 0)));
+    const denom = ((far - near) * perspectiveDepth) - far;
+    if (!Number.isFinite(denom) || Math.abs(denom) <= 1e-8) {
+      return Infinity;
+    }
+    const viewZ = (near * far) / denom;
+    const distance = -viewZ;
+    return Number.isFinite(distance) && distance >= 0 ? distance : Infinity;
+  }
+
+  function unpackRGBADepthTo01(r, g, b, a) {
+    const unpackDownscale = 255 / 256;
+    return unpackDownscale * (
+      (Number(r || 0) / 255) / (256 * 256 * 256)
+      + (Number(g || 0) / 255) / (256 * 256)
+      + (Number(b || 0) / 255) / 256
+      + (Number(a || 0) / 255)
+    );
+  }
+
+  function decodeLinearDistanceFromPackedDepth01(depth01, near, far) {
+    const depth = Math.max(0, Math.min(1, Number(depth01 || 0)));
+    const denom = ((far - near) * depth) - far;
+    if (!Number.isFinite(denom) || Math.abs(denom) <= 1e-8) {
+      return Infinity;
+    }
+    const viewZ = (near * far) / denom;
+    const distance = -viewZ;
+    return Number.isFinite(distance) && distance >= 0 ? distance : Infinity;
+  }
+
+  function buildDepthRenderDataFromPixelBuffer(pixelBuffer, width, height, near, far) {
+    const w = Math.max(1, Number(width || 0));
+    const h = Math.max(1, Number(height || 0));
+    if (!(pixelBuffer instanceof Uint8Array) || !w || !h || pixelBuffer.length < (w * h * 4)) {
+      return null;
+    }
+
+    const distances = new Float32Array(w * h);
+    const proximity = new Float32Array(w * h);
+    let minDistance = Infinity;
+    let maxDistance = -Infinity;
+    let validCount = 0;
+
+    for (let y = 0; y < h; y += 1) {
+      const flippedY = h - 1 - y;
+      for (let x = 0; x < w; x += 1) {
+        const dstIndex = (y * w) + x;
+        const srcIndex = ((flippedY * w) + x) * 4;
+        const r = pixelBuffer[srcIndex];
+        const g = pixelBuffer[srcIndex + 1];
+        const b = pixelBuffer[srcIndex + 2];
+        const a = pixelBuffer[srcIndex + 3];
+        if (r === 0 && g === 0 && b === 0 && a === 0) {
+          distances[dstIndex] = -1;
+          continue;
+        }
+        const packedDepth = unpackRGBADepthTo01(r, g, b, a);
+        const distance = decodeLinearDistanceFromPackedDepth01(packedDepth, near, far);
+        if (!Number.isFinite(distance)) {
+          distances[dstIndex] = -1;
+          continue;
+        }
+        distances[dstIndex] = distance;
+        if (distance < minDistance) minDistance = distance;
+        if (distance > maxDistance) maxDistance = distance;
+        validCount += 1;
+      }
+    }
+
+    if (!validCount || !Number.isFinite(minDistance) || !Number.isFinite(maxDistance)) {
+      return {
+        width: w,
+        height: h,
+        distances,
+        proximity,
+        minDistance: 0,
+        maxDistance: 1,
+        validCount: 0,
+      };
+    }
+
+    const span = Math.max(1e-6, maxDistance - minDistance);
+    for (let i = 0; i < distances.length; i += 1) {
+      const distance = distances[i];
+      if (distance < 0) {
+        proximity[i] = 0;
+        continue;
+      }
+      const normalized = 1 - ((distance - minDistance) / span);
+      proximity[i] = Math.pow(Math.max(0, Math.min(1, normalized)), 0.9);
+    }
+
+    return {
+      width: w,
+      height: h,
+      distances,
+      proximity,
+      minDistance,
+      maxDistance,
+      validCount,
+    };
+  }
+
+  function scaleCanvasToFit(sourceCanvas, maxWidth = 0, maxHeight = 0) {
+    if (!sourceCanvas) return null;
+    const srcW = Math.max(1, Number(sourceCanvas.width || 0));
+    const srcH = Math.max(1, Number(sourceCanvas.height || 0));
+    if (!(maxWidth > 0 && maxHeight > 0)) {
+      return sourceCanvas;
+    }
+    const scale = Math.min(maxWidth / srcW, maxHeight / srcH, 1);
+    if (!(scale > 0) || Math.abs(scale - 1) <= 1e-6) {
+      return sourceCanvas;
+    }
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = Math.max(1, Math.round(srcW * scale));
+    outCanvas.height = Math.max(1, Math.round(srcH * scale));
+    const ctx = outCanvas.getContext("2d");
+    if (!ctx) return sourceCanvas;
+    ctx.drawImage(sourceCanvas, 0, 0, outCanvas.width, outCanvas.height);
+    return outCanvas;
+  }
+
+  function buildDepthRenderDataFromCanvas(sourceCanvas, near, far) {
     const w = Math.max(1, Number(sourceCanvas?.width || 0));
     const h = Math.max(1, Number(sourceCanvas?.height || 0));
-    if (!w || !h) return null;
+    if (!w || !h || !camera) return null;
     const srcCtx = sourceCanvas.getContext("2d");
     if (!srcCtx) return null;
     const src = srcCtx.getImageData(0, 0, w, h);
+    const distances = new Float32Array(w * h);
+    const proximity = new Float32Array(w * h);
+    let minDistance = Infinity;
+    let maxDistance = -Infinity;
+    let validCount = 0;
+
+    for (let i = 0; i < distances.length; i += 1) {
+      const p = i * 4;
+      if (src.data[p + 3] <= 1) {
+        distances[i] = -1;
+        continue;
+      }
+      const depthGray = (src.data[p] + src.data[p + 1] + src.data[p + 2]) / (255 * 3);
+      const distance = decodeLinearDistanceFromDepthGray(depthGray, near, far);
+      if (!Number.isFinite(distance)) {
+        distances[i] = -1;
+        continue;
+      }
+      distances[i] = distance;
+      if (distance < minDistance) minDistance = distance;
+      if (distance > maxDistance) maxDistance = distance;
+      validCount += 1;
+    }
+
+    if (!validCount || !Number.isFinite(minDistance) || !Number.isFinite(maxDistance)) {
+      return {
+        width: w,
+        height: h,
+        distances,
+        proximity,
+        minDistance: 0,
+        maxDistance: 1,
+        validCount: 0,
+      };
+    }
+
+    const span = Math.max(1e-6, maxDistance - minDistance);
+    for (let i = 0; i < distances.length; i += 1) {
+      const distance = distances[i];
+      if (distance < 0) {
+        proximity[i] = 0;
+        continue;
+      }
+      const normalized = 1 - ((distance - minDistance) / span);
+      proximity[i] = Math.pow(Math.max(0, Math.min(1, normalized)), 0.9);
+    }
+
+    return {
+      width: w,
+      height: h,
+      distances,
+      proximity,
+      minDistance,
+      maxDistance,
+      validCount,
+    };
+  }
+
+  function buildNormalizedDepthCanvasFromRenderData(renderData) {
+    const w = Math.max(1, Number(renderData?.width || 0));
+    const h = Math.max(1, Number(renderData?.height || 0));
+    const proximity = renderData?.proximity;
+    if (!w || !h || !(proximity instanceof Float32Array)) return null;
     const outCanvas = document.createElement("canvas");
     outCanvas.width = w;
     outCanvas.height = h;
     const outCtx = outCanvas.getContext("2d");
     if (!outCtx) return null;
     const out = outCtx.createImageData(w, h);
-    const lum = new Float32Array(w * h);
-    for (let i = 0, p = 0; i < lum.length; i += 1, p += 4) {
-      lum[i] = src.data[p] * 0.299 + src.data[p + 1] * 0.587 + src.data[p + 2] * 0.114;
-    }
-    for (let y = 1; y < h - 1; y += 1) {
-      for (let x = 1; x < w - 1; x += 1) {
-        const idx = y * w + x;
-        const gx =
-          -lum[idx - w - 1] + lum[idx - w + 1]
-          - 2 * lum[idx - 1] + 2 * lum[idx + 1]
-          - lum[idx + w - 1] + lum[idx + w + 1];
-        const gy =
-          -lum[idx - w - 1] - 2 * lum[idx - w] - lum[idx - w + 1]
-          + lum[idx + w - 1] + 2 * lum[idx + w] + lum[idx + w + 1];
-        const mag = Math.min(255, Math.hypot(gx, gy));
-        const value = mag > 28 ? 255 : 0;
-        const p = idx * 4;
-        out.data[p] = value;
-        out.data[p + 1] = value;
-        out.data[p + 2] = value;
-        out.data[p + 3] = 255;
-      }
+    for (let i = 0; i < proximity.length; i += 1) {
+      const p = i * 4;
+      const value = Math.max(0, Math.min(255, Math.round(proximity[i] * 255)));
+      out.data[p] = value;
+      out.data[p + 1] = value;
+      out.data[p + 2] = value;
+      out.data[p + 3] = 255;
     }
     outCtx.putImageData(out, 0, 0);
     return outCanvas;
+  }
+
+  function buildDepthContrastCanvasFromRenderData(renderData) {
+    const w = Math.max(1, Number(renderData?.width || 0));
+    const h = Math.max(1, Number(renderData?.height || 0));
+    const proximity = renderData?.proximity;
+    const distances = renderData?.distances;
+    if (!w || !h || !(proximity instanceof Float32Array) || !(distances instanceof Float32Array)) return null;
+    const outCanvas = document.createElement("canvas");
+    outCanvas.width = w;
+    outCanvas.height = h;
+    const outCtx = outCanvas.getContext("2d");
+    if (!outCtx) return null;
+    const out = outCtx.createImageData(w, h);
+    const edgeStrength = new Float32Array(w * h);
+    let maxEdge = 0;
+
+    const sample = (x, y) => proximity[(y * w) + x];
+    const isValid = (x, y) => distances[(y * w) + x] >= 0;
+
+    for (let y = 1; y < h - 1; y += 1) {
+      for (let x = 1; x < w - 1; x += 1) {
+        const idx = y * w + x;
+        if (distances[idx] < 0) {
+          continue;
+        }
+        const gx =
+          -sample(x - 1, y - 1) + sample(x + 1, y - 1)
+          - (2 * sample(x - 1, y)) + (2 * sample(x + 1, y))
+          - sample(x - 1, y + 1) + sample(x + 1, y + 1);
+        const gy =
+          -sample(x - 1, y - 1) - (2 * sample(x, y - 1)) - sample(x + 1, y - 1)
+          + sample(x - 1, y + 1) + (2 * sample(x, y + 1)) + sample(x + 1, y + 1);
+        let mag = Math.hypot(gx, gy) * 0.5;
+        let localContrast = 0;
+        for (let oy = -1; oy <= 1; oy += 1) {
+          for (let ox = -1; ox <= 1; ox += 1) {
+            if (!ox && !oy) continue;
+            const nx = x + ox;
+            const ny = y + oy;
+            if (!isValid(nx, ny)) {
+              localContrast = Math.max(localContrast, 1);
+              continue;
+            }
+            localContrast = Math.max(localContrast, Math.abs(sample(x, y) - sample(nx, ny)));
+          }
+        }
+        mag = Math.max(mag, localContrast * 2.4);
+        edgeStrength[idx] = mag;
+        if (mag > maxEdge) maxEdge = mag;
+      }
+    }
+
+    const scale = maxEdge > 1e-6 ? (1 / maxEdge) : 1;
+    for (let i = 0; i < edgeStrength.length; i += 1) {
+      const p = i * 4;
+      const normalized = Math.max(0, Math.min(1, edgeStrength[i] * scale));
+      const contrasted = Math.pow(normalized, 0.72);
+      const value = Math.max(0, Math.min(255, Math.round(contrasted * 255)));
+      out.data[p] = value;
+      out.data[p + 1] = value;
+      out.data[p + 2] = value;
+      out.data[p + 3] = 255;
+    }
+    outCtx.putImageData(out, 0, 0);
+    return outCanvas;
+  }
+
+  function getBoxCorners(box) {
+    if (!box) return [];
+    const { min, max } = box;
+    return [
+      new three.Vector3(min.x, min.y, min.z),
+      new three.Vector3(max.x, min.y, min.z),
+      new three.Vector3(min.x, max.y, min.z),
+      new three.Vector3(max.x, max.y, min.z),
+      new three.Vector3(min.x, min.y, max.z),
+      new three.Vector3(max.x, min.y, max.z),
+      new three.Vector3(min.x, max.y, max.z),
+      new three.Vector3(max.x, max.y, max.z),
+    ];
+  }
+
+  function computeDepthRenderRange() {
+    if (!three || !camera) {
+      return { near: 0.001, far: 3000 };
+    }
+    const bounds = computeAllCharactersBounds();
+    if (!bounds || bounds.isEmpty()) {
+      return {
+        near: Math.max(0.001, Number(camera.near || 0.001)),
+        far: Math.max(0.1, Number(camera.far || 3000)),
+      };
+    }
+
+    camera.updateMatrixWorld(true);
+    const viewMatrix = camera.matrixWorldInverse;
+    let minDepth = Infinity;
+    let maxDepth = -Infinity;
+    getBoxCorners(bounds).forEach((corner) => {
+      const view = corner.clone().applyMatrix4(viewMatrix);
+      const depth = -view.z;
+      if (!Number.isFinite(depth) || depth <= 1e-5) return;
+      minDepth = Math.min(minDepth, depth);
+      maxDepth = Math.max(maxDepth, depth);
+    });
+
+    if (!Number.isFinite(minDepth) || !Number.isFinite(maxDepth)) {
+      return {
+        near: Math.max(0.001, Number(camera.near || 0.001)),
+        far: Math.max(0.1, Number(camera.far || 3000)),
+      };
+    }
+
+    const span = Math.max(0.05, maxDepth - minDepth);
+    const margin = Math.max(0.03, span * 0.18);
+    const near = Math.max(0.001, minDepth - margin);
+    const far = Math.max(near + 0.25, maxDepth + margin);
+    return { near, far };
   }
 
   function captureScenePreviewDataUrl(options = {}) {
@@ -3879,7 +5238,20 @@ function buildOverlay(node, widget, stateRef) {
     const helperStates = [];
     const prevOverrideMaterial = scene.overrideMaterial;
     const prevAspect = camera.aspect;
+    const prevNear = camera.near;
+    const prevFar = camera.far;
     const prevPixelRatio = renderer.getPixelRatio ? renderer.getPixelRatio() : 1;
+    const prevBackground = scene.background;
+    const prevToneMapping = renderer.toneMapping;
+    const prevToneMappingExposure = renderer.toneMappingExposure;
+    const prevOutputEncoding = ("outputEncoding" in renderer) ? renderer.outputEncoding : null;
+    const prevOutputColorSpace = ("outputColorSpace" in renderer) ? renderer.outputColorSpace : null;
+    const prevRenderTarget = renderer.getRenderTarget ? renderer.getRenderTarget() : null;
+    const prevClearColor = new three.Color();
+    if (renderer.getClearColor) {
+      renderer.getClearColor(prevClearColor);
+    }
+    const prevClearAlpha = renderer.getClearAlpha ? renderer.getClearAlpha() : 1;
     if (typeof prevTransformVisible === "boolean") transform.visible = false;
     if (typeof prevGroundPlaneVisible === "boolean") groundPlane.visible = false;
     if (typeof prevGroundGridVisible === "boolean") groundGrid.visible = false;
@@ -3905,11 +5277,30 @@ function buildOverlay(node, widget, stateRef) {
       });
     });
     syncProjectionState();
+    let depthMaterial = null;
+    let depthTarget = null;
     try {
+      let depthRange = null;
+      let renderData = null;
       if (mode === "depth" || mode === "edges") {
-        scene.overrideMaterial = new three.MeshDepthMaterial({
-          depthPacking: three.BasicDepthPacking,
+        depthRange = computeDepthRenderRange();
+        scene.background = null;
+        renderer.toneMapping = three.NoToneMapping;
+        renderer.toneMappingExposure = 1.0;
+        if ("outputEncoding" in renderer && three.LinearEncoding !== undefined) {
+          renderer.outputEncoding = three.LinearEncoding;
+        }
+        if ("outputColorSpace" in renderer && three.LinearSRGBColorSpace !== undefined) {
+          renderer.outputColorSpace = three.LinearSRGBColorSpace;
+        }
+        renderer.setClearColor(0x000000, 0);
+        depthMaterial = new three.MeshDepthMaterial({
+          depthPacking: three.RGBADepthPacking,
+          blending: three.NoBlending,
         });
+        scene.overrideMaterial = depthMaterial;
+        camera.near = depthRange.near;
+        camera.far = depthRange.far;
       }
       if (renderer.setPixelRatio) {
         renderer.setPixelRatio(1);
@@ -3917,29 +5308,75 @@ function buildOverlay(node, widget, stateRef) {
       renderer.setSize(renderW, renderH, false);
       camera.aspect = renderW / Math.max(1, renderH);
       camera.updateProjectionMatrix();
-      renderer.render(scene, camera);
+      if (mode === "depth" || mode === "edges") {
+        depthTarget = new three.WebGLRenderTarget(renderW, renderH, {
+          format: three.RGBAFormat,
+          type: three.UnsignedByteType,
+          depthBuffer: true,
+          stencilBuffer: false,
+        });
+        renderer.setRenderTarget(depthTarget);
+        renderer.clear(true, true, true);
+        renderer.render(scene, camera);
+        const pixels = new Uint8Array(renderW * renderH * 4);
+        renderer.readRenderTargetPixels(depthTarget, 0, 0, renderW, renderH, pixels);
+        renderData = buildDepthRenderDataFromPixelBuffer(
+          pixels,
+          renderW,
+          renderH,
+          Number(depthRange?.near || camera.near || 0.001),
+          Number(depthRange?.far || camera.far || 3000),
+        );
+        renderer.setRenderTarget(prevRenderTarget || null);
+      } else {
+        renderer.setRenderTarget(null);
+        renderer.render(scene, camera);
+      }
       const srcCanvas = renderer.domElement;
       if (!srcCanvas) return "";
       const srcW = Math.max(1, Number(srcCanvas.width || renderW));
       const srcH = Math.max(1, Number(srcCanvas.height || renderH));
-      const scale = (maxWidth > 0 && maxHeight > 0)
-        ? Math.min(maxWidth / srcW, maxHeight / srcH, 1)
-        : 1;
-      const outW = Math.max(1, Math.round(srcW * scale));
-      const outH = Math.max(1, Math.round(srcH * scale));
-      const canvas = document.createElement("canvas");
-      canvas.width = outW;
-      canvas.height = outH;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return "";
-      ctx.drawImage(srcCanvas, 0, 0, outW, outH);
-      if (mode === "edges") {
-        const edgeCanvas = buildEdgeCanvasFromCanvas(canvas);
-        return edgeCanvas ? edgeCanvas.toDataURL("image/png") : "";
+      let processedCanvas = null;
+      if (renderData) {
+        processedCanvas = buildNormalizedDepthCanvasFromRenderData(renderData);
+        processedCanvas = scaleCanvasToFit(processedCanvas, maxWidth, maxHeight) || processedCanvas;
+      } else {
+        const scale = (maxWidth > 0 && maxHeight > 0)
+          ? Math.min(maxWidth / srcW, maxHeight / srcH, 1)
+          : 1;
+        const outW = Math.max(1, Math.round(srcW * scale));
+        const outH = Math.max(1, Math.round(srcH * scale));
+        processedCanvas = document.createElement("canvas");
+        processedCanvas.width = outW;
+        processedCanvas.height = outH;
+        const ctx = processedCanvas.getContext("2d");
+        if (!ctx) return "";
+        ctx.drawImage(srcCanvas, 0, 0, outW, outH);
       }
-      return canvas.toDataURL("image/png");
+      if (mode === "edges") {
+        const edgeCanvas = renderData
+          ? (buildDepthContrastCanvasFromRenderData(renderData) || processedCanvas)
+          : processedCanvas;
+        const scaledEdgeCanvas = scaleCanvasToFit(edgeCanvas, maxWidth, maxHeight) || edgeCanvas;
+        return scaledEdgeCanvas ? scaledEdgeCanvas.toDataURL("image/png") : "";
+      }
+      return processedCanvas ? processedCanvas.toDataURL("image/png") : "";
     } finally {
+      renderer.setRenderTarget(prevRenderTarget || null);
       scene.overrideMaterial = prevOverrideMaterial || null;
+      scene.background = prevBackground || null;
+      renderer.toneMapping = prevToneMapping;
+      renderer.toneMappingExposure = prevToneMappingExposure;
+      camera.near = prevNear;
+      camera.far = prevFar;
+      depthMaterial?.dispose?.();
+      depthTarget?.dispose?.();
+      if ("outputEncoding" in renderer && prevOutputEncoding != null) {
+        renderer.outputEncoding = prevOutputEncoding;
+      }
+      if ("outputColorSpace" in renderer && prevOutputColorSpace != null) {
+        renderer.outputColorSpace = prevOutputColorSpace;
+      }
       materialStates.forEach(([mat, transparent, opacity]) => {
         mat.transparent = transparent;
         mat.opacity = opacity;
@@ -3958,6 +5395,8 @@ function buildOverlay(node, widget, stateRef) {
       if (renderer.setPixelRatio) {
         renderer.setPixelRatio(prevPixelRatio);
       }
+      renderer.setClearColor(prevClearColor, prevClearAlpha);
+      renderer.setRenderTarget(null);
       camera.aspect = prevAspect;
       camera.updateProjectionMatrix();
       resizeRenderer();
@@ -3970,37 +5409,46 @@ function buildOverlay(node, widget, stateRef) {
   }
 
   function applyEuler(axis, deg) {
-    if (!selectedBone) return;
-    const euler = selectedBone.rotation;
+    const target = getTransformValueTarget("rotation");
+    if (!target) return;
+    const euler = target.rotation;
     if (axis === "x") euler.x = degreesToRadians(deg);
     if (axis === "y") euler.y = degreesToRadians(deg);
     if (axis === "z") euler.z = degreesToRadians(deg);
-    selectedBone.updateMatrixWorld(true);
-    applyMirroredFromSelectedChannel("rotation", axis);
+    target.updateMatrixWorld(true);
+    if (target === selectedBone) {
+      applyMirroredFromSelectedChannel("rotation", axis);
+    }
     refreshSkinnedMeshes();
     scheduleHistoryCapture();
     syncInputsFromBone();
   }
 
   function applyPosition(axis, value) {
-    if (!selectedBone) return;
-    selectedBone.position[axis] = value;
-    selectedBone.updateMatrixWorld(true);
-    applyMirroredFromSelectedChannel("position", axis);
+    const target = getTransformValueTarget("position");
+    if (!target) return;
+    target.position[axis] = value;
+    target.updateMatrixWorld(true);
+    if (target === selectedBone) {
+      applyMirroredFromSelectedChannel("position", axis);
+    }
     refreshSkinnedMeshes();
     scheduleHistoryCapture();
     syncInputsFromBone();
   }
 
   function applyScale(axis, value) {
-    if (!selectedBone) return;
+    const target = getTransformValueTarget("scale");
+    if (!target) return;
     if (axis === "u") {
-      selectedBone.scale.set(value, value, value);
+      target.scale.set(value, value, value);
     } else {
-      selectedBone.scale[axis] = value;
+      target.scale[axis] = value;
     }
-    selectedBone.updateMatrixWorld(true);
-    applyMirroredFromSelectedChannel("scale", axis);
+    target.updateMatrixWorld(true);
+    if (target === selectedBone) {
+      applyMirroredFromSelectedChannel("scale", axis);
+    }
     refreshSkinnedMeshes();
     scheduleHistoryCapture();
     syncInputsFromBone();
@@ -4008,17 +5456,26 @@ function buildOverlay(node, widget, stateRef) {
 
   function syncInputsFromBone() {
     updateTransformContextUI();
-    if (!selectedBone) return;
-    rotX.setValue(radiansToDegrees(selectedBone.rotation.x));
-    rotY.setValue(radiansToDegrees(selectedBone.rotation.y));
-    rotZ.setValue(radiansToDegrees(selectedBone.rotation.z));
-    posX.setValue(selectedBone.position.x);
-    posY.setValue(selectedBone.position.y);
-    posZ.setValue(selectedBone.position.z);
-    scaleU.setValue(selectedBone.scale.x);
-    scaleX.setValue(selectedBone.scale.x);
-    scaleY.setValue(selectedBone.scale.y);
-    scaleZ.setValue(selectedBone.scale.z);
+    const rotationTarget = getTransformValueTarget("rotation");
+    const positionTarget = getTransformValueTarget("position");
+    const scaleTarget = getTransformValueTarget("scale");
+    if (!rotationTarget && !positionTarget && !scaleTarget) return;
+    if (rotationTarget) {
+      rotX.setValue(radiansToDegrees(rotationTarget.rotation.x));
+      rotY.setValue(radiansToDegrees(rotationTarget.rotation.y));
+      rotZ.setValue(radiansToDegrees(rotationTarget.rotation.z));
+    }
+    if (positionTarget) {
+      posX.setValue(positionTarget.position.x);
+      posY.setValue(positionTarget.position.y);
+      posZ.setValue(positionTarget.position.z);
+    }
+    if (scaleTarget) {
+      scaleU.setValue(scaleTarget.scale.x);
+      scaleX.setValue(scaleTarget.scale.x);
+      scaleY.setValue(scaleTarget.scale.y);
+      scaleZ.setValue(scaleTarget.scale.z);
+    }
   }
 
   function updateFovSlider() {
@@ -4052,13 +5509,248 @@ function buildOverlay(node, widget, stateRef) {
     return box;
   }
 
+  function inferTargetModelHeightUnits(name = "") {
+    const n = String(name || "").toLowerCase();
+    if (n.includes("baby")) {
+      return 0.96;
+    }
+    if (n.includes("kid") || n.includes("child") || n.includes("chil")) {
+      return 1.28;
+    }
+    if (n.includes("teen")) {
+      return 1.56;
+    }
+    return 1.72;
+  }
+
+  function normalizeImportedModelScale(root, sourceName = "") {
+    if (!root || !three) return false;
+    const box = computeModelBounds(root);
+    if (!box) return false;
+    const size = box.getSize(new three.Vector3());
+    const height = Number(size.y);
+    if (!Number.isFinite(height) || height <= 1e-6) return false;
+    const targetHeight = inferTargetModelHeightUnits(sourceName);
+    const ratio = targetHeight / height;
+    if (!Number.isFinite(ratio) || ratio <= 1e-6) return false;
+    if (Math.abs(1.0 - ratio) <= 0.05) return false;
+    root.scale.multiplyScalar(ratio);
+    root.updateMatrixWorld(true);
+    return true;
+  }
+
+  function getColorLuminance(color) {
+    if (!color) return 0;
+    return (0.2126 * Number(color.r || 0))
+      + (0.7152 * Number(color.g || 0))
+      + (0.0722 * Number(color.b || 0));
+  }
+
+  function hasUsableTextureImage(texture) {
+    if (!texture) return false;
+    const image = texture.image || texture.source?.data || null;
+    if (!image) return false;
+    if (typeof image.width === "number" && typeof image.height === "number") {
+      return image.width > 0 && image.height > 0;
+    }
+    return true;
+  }
+
+  function sanitizeImportedMeshMaterial(mesh, material) {
+    if (!mesh || !material || !three) return;
+    const geometry = mesh.geometry || null;
+    const hasVertexColorAttr = Boolean(geometry?.attributes?.color);
+    if (material.vertexColors && !hasVertexColorAttr) {
+      material.vertexColors = false;
+    }
+
+    const hasUsableMap = hasUsableTextureImage(material.map);
+    if (material.map && !hasUsableMap) {
+      material.map = null;
+    }
+
+    material.side = three.DoubleSide;
+    material.depthWrite = true;
+    material.depthTest = true;
+    material.opacity = 1.0;
+    material.transparent = false;
+    if ("alphaTest" in material) material.alphaTest = 0.0;
+    if ("flatShading" in material) material.flatShading = false;
+
+    const needsNeutralSurface = !hasUsableMap && (!material.vertexColors || !hasVertexColorAttr);
+    if (material.color && needsNeutralSurface && getColorLuminance(material.color) < 0.22) {
+      material.color.setRGB(0.74, 0.76, 0.8);
+    }
+    if ("emissive" in material && material.emissive && getColorLuminance(material.emissive) < 0.01) {
+      material.emissive.setRGB(0.035, 0.04, 0.05);
+    }
+    if ("metalness" in material) material.metalness = 0.05;
+    if ("roughness" in material) material.roughness = 0.82;
+    material.needsUpdate = true;
+  }
+
+  const PRIMITIVE_SHAPES = [
+    { type: "cube", label: "Cube" },
+    { type: "sphere", label: "Sphere" },
+    { type: "cylinder", label: "Cylinder" },
+    { type: "spherocylinder", label: "Spherocylinder" },
+    { type: "torus", label: "Torus" },
+  ];
+
+  function getPrimitiveDefaults(shapeType) {
+    switch (String(shapeType || "").toLowerCase()) {
+      case "sphere":
+        return { radius: 0.34 };
+      case "cylinder":
+        return { radiusTop: 0.22, radiusBottom: 0.22, height: 0.96 };
+      case "spherocylinder":
+        return { radius: 0.2, height: 0.92 };
+      case "torus":
+        return { radius: 0.34, tube: 0.09 };
+      case "cube":
+      default:
+        return { width: 0.58, height: 0.58, depth: 0.58 };
+    }
+  }
+
+  function getPrimitiveShapeLabel(shapeType) {
+    const found = PRIMITIVE_SHAPES.find((shape) => shape.type === shapeType);
+    return found?.label || "Object";
+  }
+
+  function createPrimitiveMaterial(colorHex = 0xd4dbe8) {
+    return new three.MeshStandardMaterial({
+      color: colorHex,
+      roughness: 0.78,
+      metalness: 0.04,
+    });
+  }
+
+  function buildPrimitiveRenderable(shapeType, params, colorHex = 0xd4dbe8) {
+    const material = createPrimitiveMaterial(colorHex);
+    const type = String(shapeType || "cube").toLowerCase();
+    if (type === "sphere") {
+      const radius = Math.max(0.05, Number(params?.radius || 0.34));
+      const geometry = new three.SphereGeometry(radius, 28, 18);
+      geometry.translate(0, radius, 0);
+      return new three.Mesh(geometry, material);
+    }
+    if (type === "cylinder") {
+      const radiusTop = Math.max(0.03, Number(params?.radiusTop || 0.22));
+      const radiusBottom = Math.max(0.03, Number(params?.radiusBottom || radiusTop));
+      const height = Math.max(0.08, Number(params?.height || 0.96));
+      const geometry = new three.CylinderGeometry(radiusTop, radiusBottom, height, 24, 1);
+      geometry.translate(0, height * 0.5, 0);
+      return new three.Mesh(geometry, material);
+    }
+    if (type === "spherocylinder") {
+      const radius = Math.max(0.04, Number(params?.radius || 0.2));
+      const totalHeight = Math.max(radius * 2.2, Number(params?.height || 0.92));
+      if (typeof three.CapsuleGeometry === "function") {
+        const shaft = Math.max(0.01, totalHeight - (radius * 2));
+        const geometry = new three.CapsuleGeometry(radius, shaft, 6, 16);
+        geometry.translate(0, totalHeight * 0.5, 0);
+        return new three.Mesh(geometry, material);
+      }
+      const group = new three.Group();
+      const shaft = Math.max(0.01, totalHeight - (radius * 2));
+      const cyl = new three.Mesh(
+        new three.CylinderGeometry(radius, radius, shaft, 24, 1),
+        material,
+      );
+      cyl.position.y = radius + (shaft * 0.5);
+      const top = new three.Mesh(new three.SphereGeometry(radius, 24, 16), material);
+      top.position.y = radius + shaft;
+      const bottom = new three.Mesh(new three.SphereGeometry(radius, 24, 16), material);
+      bottom.position.y = radius;
+      group.add(cyl, top, bottom);
+      return group;
+    }
+    if (type === "torus") {
+      const radius = Math.max(0.08, Number(params?.radius || 0.34));
+      const tube = Math.max(0.02, Number(params?.tube || 0.09));
+      const mesh = new three.Mesh(
+        new three.TorusGeometry(radius, tube, 18, 36),
+        material,
+      );
+      mesh.rotation.x = Math.PI * 0.5;
+      mesh.position.y = radius + tube;
+      return mesh;
+    }
+    const width = Math.max(0.05, Number(params?.width || 0.58));
+    const height = Math.max(0.05, Number(params?.height || 0.58));
+    const depth = Math.max(0.05, Number(params?.depth || 0.58));
+    const geometry = new three.BoxGeometry(width, height, depth);
+    geometry.translate(0, height * 0.5, 0);
+    return new three.Mesh(geometry, material);
+  }
+
+  function rebuildSceneObjectGeometry(sceneObject) {
+    if (!sceneObject || !three) return;
+    const root = getSceneObjectRoot(sceneObject);
+    if (!root) return;
+    if (sceneObject.meshRoot && sceneObject.meshRoot.parent === root) {
+      root.remove(sceneObject.meshRoot);
+    }
+    sceneObject.meshRoot = buildPrimitiveRenderable(sceneObject.shapeType, sceneObject.params, sceneObject.colorHex);
+    sceneObject.meshRoot.name = `${sceneObject.name || "Object"} Mesh`;
+    root.add(sceneObject.meshRoot);
+    root.updateMatrixWorld(true);
+    if (activeSelection?.kind === "object" && activeSelection.id === sceneObject.id) {
+      modelRoot = sceneObject.meshRoot;
+    }
+  }
+
+  function buildPrimitiveObjectName(shapeType) {
+    const base = getPrimitiveShapeLabel(shapeType);
+    const nextIndex = sceneObjects.filter((obj) => obj?.shapeType === shapeType).length + 1;
+    return `${base} ${nextIndex}`;
+  }
+
+  function createPrimitiveSceneObject(shapeType, options = {}) {
+    if (!three || !scene) return null;
+    const params = {
+      ...getPrimitiveDefaults(shapeType),
+      ...(options?.params && typeof options.params === "object" ? options.params : {}),
+    };
+    const sceneObject = {
+      id: options?.id || `obj_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      kind: "object",
+      shapeType: String(shapeType || "cube").toLowerCase(),
+      name: String(options?.name || buildPrimitiveObjectName(shapeType)),
+      sceneRoot: new three.Group(),
+      meshRoot: null,
+      params,
+      colorHex: Number(options?.colorHex || 0xd4dbe8),
+    };
+    sceneObject.sceneRoot.name = `${sceneObject.name} Root`;
+    rebuildSceneObjectGeometry(sceneObject);
+    scene.add(sceneObject.sceneRoot);
+    if (options?.transform && typeof options.transform === "object") {
+      const tx = options.transform;
+      if (Array.isArray(tx.position) && tx.position.length === 3) {
+        sceneObject.sceneRoot.position.set(tx.position[0], tx.position[1], tx.position[2]);
+      }
+      if (Array.isArray(tx.quaternion) && tx.quaternion.length === 4) {
+        sceneObject.sceneRoot.quaternion.set(tx.quaternion[0], tx.quaternion[1], tx.quaternion[2], tx.quaternion[3]);
+      }
+      if (Array.isArray(tx.scale) && tx.scale.length === 3) {
+        sceneObject.sceneRoot.scale.set(tx.scale[0], tx.scale[1], tx.scale[2]);
+      }
+      sceneObject.sceneRoot.updateMatrixWorld(true);
+    }
+    sceneObjects.push(sceneObject);
+    sharedSession.sceneObjects = sceneObjects;
+    return sceneObject;
+  }
+
   function updateCameraClipping() {
     if (!camera || !three) return;
     const target = orbit?.target?.clone?.() || new three.Vector3(0, 0, 0);
     const dist = Math.max(0.0001, camera.position.distanceTo(target));
     let near = Math.max(0.00005, Math.min(0.02, dist * 0.005));
     let far = Math.max(500, dist * 140);
-    const box = computeModelBounds(modelRoot);
+    const box = modelRoot ? computeModelBounds(modelRoot) : computeAllCharactersBounds();
     if (box) {
       const center = box.getCenter(new three.Vector3());
       const size = box.getSize(new three.Vector3());
@@ -4076,7 +5768,7 @@ function buildOverlay(node, widget, stateRef) {
 
   function updateOrbitDistanceLimits() {
     if (!orbit || !three) return;
-    const box = computeModelBounds(modelRoot);
+    const box = modelRoot ? computeModelBounds(modelRoot) : computeAllCharactersBounds();
     if (!box) {
       orbit.minDistance = 0.02;
       orbit.maxDistance = 300;
@@ -4089,8 +5781,8 @@ function buildOverlay(node, widget, stateRef) {
   }
 
   function frameModel() {
-    if (!modelRoot || !camera || !orbit || !renderer) return;
-    const box = computeModelBounds(modelRoot);
+    if (!camera || !orbit || !renderer) return;
+    const box = modelRoot ? computeModelBounds(modelRoot) : computeAllCharactersBounds();
     if (!box) return;
     const size = box.getSize(new three.Vector3());
     const center = box.getCenter(new three.Vector3());
@@ -4181,11 +5873,18 @@ function buildOverlay(node, widget, stateRef) {
   function ensureCharactersAttachedToScene() {
     if (!scene) return;
     characters.forEach((ch) => {
-      if (ch?.modelRoot && ch.modelRoot.parent !== scene) {
-        scene.add(ch.modelRoot);
+      const sceneRoot = getCharacterSceneRoot(ch);
+      if (sceneRoot && sceneRoot.parent !== scene) {
+        scene.add(sceneRoot);
       }
       if (ch?.skeletonHelper && ch.skeletonHelper.parent !== scene) {
         scene.add(ch.skeletonHelper);
+      }
+    });
+    sceneObjects.forEach((obj) => {
+      const sceneRoot = getSceneObjectRoot(obj);
+      if (sceneRoot && sceneRoot.parent !== scene) {
+        scene.add(sceneRoot);
       }
     });
     ensureSelectedBoneVisuals();
@@ -4220,7 +5919,7 @@ function buildOverlay(node, widget, stateRef) {
 
   function populateBones() {
     clearBoneList();
-    if (!bones.length) return;
+    if (!bones.length || activeSelection?.kind !== "character") return;
 
     const visited = new Set();
     const boneSet = new Set(bones.map((b) => b.uuid));
@@ -4296,7 +5995,10 @@ function buildOverlay(node, widget, stateRef) {
     };
 
     roots.forEach((root) => buildRow(boneList, root, 0));
-    selectBone(roots[0] || bones[0]);
+    const nextSelection = bones.find((bone) => bone.uuid === selectedBone?.uuid) || roots[0] || bones[0] || null;
+    if (nextSelection) {
+      selectBone(nextSelection);
+    }
   }
 
   function serializeState(includePreview = true) {
@@ -4318,16 +6020,42 @@ function buildOverlay(node, widget, stateRef) {
 
     const charactersPayload = characters.map((ch) => {
       const pose = serializePose(ch.bones || []);
+      const sceneRoot = getCharacterSceneRoot(ch);
       const charPayload = {
         id: ch.id,
         name: ch.name,
         pose,
         mesh_ext: ch.meshExt || "fbx",
       };
+      if (sceneRoot) {
+        charPayload.scene_transform = {
+          position: [sceneRoot.position.x, sceneRoot.position.y, sceneRoot.position.z],
+          quaternion: [sceneRoot.quaternion.x, sceneRoot.quaternion.y, sceneRoot.quaternion.z, sceneRoot.quaternion.w],
+          scale: [sceneRoot.scale.x, sceneRoot.scale.y, sceneRoot.scale.z],
+        };
+      }
       if (ch.meshBuffer instanceof ArrayBuffer) {
         charPayload.mesh_b64 = bufferToBase64(ch.meshBuffer);
       }
       return charPayload;
+    });
+
+    const objectsPayload = sceneObjects.map((obj) => {
+      const sceneRoot = getSceneObjectRoot(obj);
+      return {
+        id: obj.id,
+        name: obj.name,
+        shape_type: obj.shapeType,
+        params: { ...(obj.params || {}) },
+        color_hex: obj.colorHex,
+        scene_transform: sceneRoot
+          ? {
+            position: [sceneRoot.position.x, sceneRoot.position.y, sceneRoot.position.z],
+            quaternion: [sceneRoot.quaternion.x, sceneRoot.quaternion.y, sceneRoot.quaternion.z, sceneRoot.quaternion.w],
+            scale: [sceneRoot.scale.x, sceneRoot.scale.y, sceneRoot.scale.z],
+          }
+          : null,
+      };
     });
 
     const active = getActiveCharacter();
@@ -4347,8 +6075,20 @@ function buildOverlay(node, widget, stateRef) {
     const payload = {
       pose: activePose,
       characters: charactersPayload,
+      objects: objectsPayload,
       active_character_id: activeCharacterId,
+      active_selection: activeSelection ? { ...activeSelection } : null,
       camera: activeCam,
+      render_options: {
+        draw_hands: Boolean(editorRenderOptions.drawHands),
+        draw_face_mask: Boolean(editorRenderOptions.drawFaceMask),
+      },
+      ui: {
+        panel_widths: {
+          left: panelWidths.left,
+          right: panelWidths.right,
+        },
+      },
       meta: {
         modelName: modelBadge.textContent || "",
         updated: Date.now(),
@@ -4358,7 +6098,7 @@ function buildOverlay(node, widget, stateRef) {
   if (includePreview && renderer) {
     try {
       const [width, height] = Array.isArray(activeCam.resolution) ? activeCam.resolution : [1024, 768];
-      payload.preview_png = captureScenePreviewDataUrl({ mode: "beauty", width, height }) || "";
+      payload.preview_png = captureSkeletonPreviewForSlot(0, getOpenPoseRenderOptions()) || "";
       payload.depth_png = captureScenePreviewDataUrl({ mode: "depth", width, height }) || "";
       payload.edges_png = captureScenePreviewDataUrl({ mode: "edges", width, height }) || "";
     } catch (err) {
@@ -4386,6 +6126,736 @@ function buildOverlay(node, widget, stateRef) {
     }
     const active = getActiveCharacter();
     return active ? [active] : [];
+  }
+
+  function getBooleanWidgetValue(name, fallback = false) {
+    const widget = getNodeWidgetByName(node, name);
+    if (!widget) return fallback;
+    return Boolean(widget.value);
+  }
+
+  function getOpenPoseRenderOptions() {
+    return normalizeRenderOptions(editorRenderOptions);
+  }
+
+  function getFingerBoneAliases(side, finger, jointIdx) {
+    const title = String(side || "").toLowerCase() === "left" ? "Left" : "Right";
+    const fingerRoots = {
+      thumb: "HandThumb",
+      index: "HandIndex",
+      middle: "HandMiddle",
+      ring: "HandRing",
+      pinky: "HandPinky",
+    };
+    const root = fingerRoots[finger];
+    if (!root) return [];
+    return [
+      `mixamorig${title}${root}${jointIdx}`,
+      `${title}${root}${jointIdx}`,
+      `mixamorig${title}${finger[0].toUpperCase()}${finger.slice(1)}${jointIdx}`,
+      `${title}${finger[0].toUpperCase()}${finger.slice(1)}${jointIdx}`,
+      `mixamorig${title}${root}${jointIdx}_End`,
+      `${title}${root}${jointIdx}_End`,
+    ];
+  }
+
+  function getCharacterHandPose2d(character, side, width, height, frameRect = null) {
+    if (!character?.boneNameMap || !three) return null;
+    const sideKey = String(side || "").toLowerCase();
+    const wristIdx = sideKey === "left" ? 7 : 4;
+    const wristBone = getBoneForOpenPoseIndex(character, wristIdx);
+    if (!wristBone) return null;
+
+    const projectBone = (bone) => {
+      if (!bone) return null;
+      const p = new three.Vector3();
+      bone.getWorldPosition(p);
+      return projectWorldToOverlay(p, width, height, frameRect);
+    };
+
+    const points = Array.from({ length: 21 }, () => null);
+    points[0] = projectBone(wristBone);
+    const fingers = ["thumb", "index", "middle", "ring", "pinky"];
+    fingers.forEach((finger, fingerIdx) => {
+      for (let joint = 1; joint <= 4; joint += 1) {
+        const bone = findBoneByAliases(character.boneNameMap, getFingerBoneAliases(sideKey, finger, joint));
+        points[1 + fingerIdx * 4 + (joint - 1)] = projectBone(bone);
+      }
+    });
+    if (!points[0]) return null;
+    return points;
+  }
+
+  const FACE_MASK_HEAD_SHAPE_CACHE_VERSION = 2;
+  const FACE_SURFACE_PROFILE_CACHE_VERSION = 2;
+
+  function ensureCharacterHeadFaceShapeCache(character, faceCache, headBone, localEyeMid, localRightVec, localDownVec, localForwardVec) {
+    if (!character || !three || !character.modelRoot || !faceCache?.headUuid || !headBone) {
+      return null;
+    }
+    const cached = character.faceMaskHeadShapeCache;
+    if (
+      cached?.version === FACE_MASK_HEAD_SHAPE_CACHE_VERSION
+      && cached?.headUuid === faceCache.headUuid
+      && Array.isArray(cached.samples)
+      && cached.samples.length
+    ) {
+      return cached;
+    }
+
+    const headBoneUuids = new Set();
+    headBone.traverse?.((node) => {
+      if (node?.isBone) {
+        headBoneUuids.add(node.uuid);
+      }
+    });
+    if (!headBoneUuids.size) {
+      headBoneUuids.add(faceCache.headUuid);
+    }
+
+    headBone.updateMatrixWorld(true);
+    const invHead = new three.Matrix4().copy(headBone.matrixWorld).invert();
+    const samples = [];
+    const worldVertex = new three.Vector3();
+    const headLocalVertex = new three.Vector3();
+    const relativeLocal = new three.Vector3();
+    const skinIndex = new three.Vector4();
+    const skinWeight = new three.Vector4();
+
+    character.modelRoot.updateWorldMatrix?.(true, true);
+    character.modelRoot.traverse((child) => {
+      if (!child?.isSkinnedMesh || !child.skeleton?.bones) return;
+      const positionAttr = child.geometry?.attributes?.position;
+      const skinIndexAttr = child.geometry?.attributes?.skinIndex;
+      const skinWeightAttr = child.geometry?.attributes?.skinWeight;
+      if (!positionAttr?.count || !skinIndexAttr?.count || !skinWeightAttr?.count) return;
+
+      const trackedBoneIndices = [];
+      child.skeleton.bones.forEach((bone, idx) => {
+        if (headBoneUuids.has(bone?.uuid)) {
+          trackedBoneIndices.push(idx);
+        }
+      });
+      if (!trackedBoneIndices.length) return;
+      const trackedBoneSet = new Set(trackedBoneIndices);
+
+      // The face fit only needs a coarse head envelope, so keep sampling light.
+      const step = Math.max(1, Math.ceil(positionAttr.count / 1400));
+      for (let i = 0; i < positionAttr.count; i += step) {
+        skinIndex.fromBufferAttribute(skinIndexAttr, i);
+        skinWeight.fromBufferAttribute(skinWeightAttr, i);
+
+        let trackedWeight = 0;
+        let totalWeight = 0;
+        let dominantBoneIndex = -1;
+        let dominantWeight = -1;
+        for (let k = 0; k < 4; k += 1) {
+          const boneIndex = skinIndex.getComponent(k);
+          const weight = skinWeight.getComponent(k);
+          if (!Number.isFinite(weight) || weight <= 1e-5) continue;
+          totalWeight += weight;
+          if (trackedBoneSet.has(boneIndex)) {
+            trackedWeight += weight;
+          }
+          if (weight > dominantWeight) {
+            dominantWeight = weight;
+            dominantBoneIndex = boneIndex;
+          }
+        }
+        if (totalWeight <= 1e-5) continue;
+        if (trackedWeight < 0.4 && !trackedBoneSet.has(dominantBoneIndex)) continue;
+
+        child.getVertexPosition(i, worldVertex);
+        worldVertex.applyMatrix4(child.matrixWorld);
+        headLocalVertex.copy(worldVertex).applyMatrix4(invHead);
+        relativeLocal.copy(headLocalVertex).sub(localEyeMid);
+        samples.push({
+          u: relativeLocal.dot(localRightVec),
+          v: relativeLocal.dot(localDownVec),
+          w: relativeLocal.dot(localForwardVec),
+        });
+      }
+    });
+
+    if (!samples.length) return null;
+    character.faceMaskHeadShapeCache = {
+      version: FACE_MASK_HEAD_SHAPE_CACHE_VERSION,
+      headUuid: faceCache.headUuid,
+      samples,
+    };
+    return character.faceMaskHeadShapeCache;
+  }
+
+  function getCharacterHeadLocalFrame(character, faceCache, headBone) {
+    if (!character || !faceCache?.local || !headBone || !three) return null;
+
+    const localEyeMid = averageScenePoints([faceCache.local.leye, faceCache.local.reye]);
+    let localRightVec = faceCache.local.reye.clone().sub(faceCache.local.leye);
+    const localEyeDist = localRightVec.length();
+    if (!localEyeMid || !Number.isFinite(localEyeDist) || localEyeDist <= 1e-5) {
+      return null;
+    }
+    localRightVec.normalize();
+
+    headBone.updateMatrixWorld(true);
+    const invHead = new three.Matrix4().copy(headBone.matrixWorld).invert();
+    const toHeadLocal = (bone) => {
+      if (!bone) return null;
+      const worldPos = new three.Vector3();
+      bone.getWorldPosition(worldPos);
+      return worldPos.applyMatrix4(invHead);
+    };
+
+    const headTopBone = findBoneByAliases(character.boneNameMap, ["mixamorigHeadTop_End", "HeadTop_End", "HeadTop"]);
+    const neckBone = findBoneByAliases(character.boneNameMap, OPENPOSE_TO_BONE.Neck || []);
+    const localHeadTop = toHeadLocal(headTopBone);
+    const localNeck = toHeadLocal(neckBone);
+
+    let localUpVec = localHeadTop
+      ? localHeadTop.clone().sub(localEyeMid)
+      : (localNeck ? localEyeMid.clone().sub(localNeck) : new three.Vector3(0, 1, 0));
+    localUpVec.addScaledVector(localRightVec, -localUpVec.dot(localRightVec));
+    if (localUpVec.lengthSq() <= 1e-10) {
+      localUpVec = new three.Vector3(0, 1, 0);
+      localUpVec.addScaledVector(localRightVec, -localUpVec.dot(localRightVec));
+    }
+    if (localUpVec.lengthSq() <= 1e-10) {
+      localUpVec = new three.Vector3(0, 0, 1);
+      localUpVec.addScaledVector(localRightVec, -localUpVec.dot(localRightVec));
+    }
+    if (localUpVec.lengthSq() <= 1e-10) {
+      return null;
+    }
+    localUpVec.normalize();
+
+    let localDownVec = localUpVec.clone().multiplyScalar(-1);
+    const localNoseVector = faceCache.local.nose.clone().sub(localEyeMid);
+    if (localNoseVector.dot(localDownVec) < 0) {
+      localUpVec.multiplyScalar(-1);
+      localDownVec.multiplyScalar(-1);
+    }
+
+    let localForwardVec = new three.Vector3().crossVectors(localRightVec, localDownVec);
+    if (localForwardVec.lengthSq() <= 1e-10) {
+      localForwardVec = new three.Vector3(0, 0, 1);
+    }
+    localForwardVec.normalize();
+    if (localNoseVector.dot(localForwardVec) < 0) {
+      localForwardVec.multiplyScalar(-1);
+    }
+
+    return {
+      localEyeMid,
+      localEyeDist,
+      localNoseVector,
+      localRightVec,
+      localUpVec,
+      localDownVec,
+      localForwardVec,
+    };
+  }
+
+  function raycastCharacterHeadLocalPoint(character, headBone, originLocal, directionLocal, maxDistance, fallbackLocal = null) {
+    if (!character?.modelRoot || !headBone || !three || !originLocal || !directionLocal) {
+      return fallbackLocal?.clone?.() || null;
+    }
+    headBone.updateMatrixWorld(true);
+    character.modelRoot.updateWorldMatrix?.(true, true);
+    const originWorld = originLocal.clone().applyMatrix4(headBone.matrixWorld);
+    const directionWorld = directionLocal.clone().transformDirection(headBone.matrixWorld);
+    const hit = raycastHitFromOrigin(three, character.modelRoot, originWorld, directionWorld, maxDistance);
+    if (!hit) {
+      return fallbackLocal?.clone?.() || null;
+    }
+    const invHead = new three.Matrix4().copy(headBone.matrixWorld).invert();
+    return hit.clone().applyMatrix4(invHead);
+  }
+
+  function isCharacterWorldPointVisible(character, worldPoint, tolerance = 0.012) {
+    if (!character?.modelRoot || !three || !camera || !worldPoint) return true;
+    const cameraOrigin = new three.Vector3();
+    camera.getWorldPosition(cameraOrigin);
+    const direction = worldPoint.clone().sub(cameraOrigin);
+    const targetDistance = direction.length();
+    if (!Number.isFinite(targetDistance) || targetDistance <= 1e-6) return true;
+    const hit = raycastHitFromOrigin(three, character.modelRoot, cameraOrigin, direction, targetDistance + tolerance);
+    if (!hit) return true;
+    const hitDistance = hit.distanceTo(cameraOrigin);
+    return hitDistance >= (targetDistance - tolerance);
+  }
+
+  function ensureCharacterFaceSurfaceProfile(character, faceCache, headBone, localEyeMid, localRightVec, localDownVec, localForwardVec, localEyeDist, localNoseVector) {
+    if (!character || !faceCache?.headUuid || !headBone || !three) return null;
+    const cached = character.faceSurfaceProfileCache;
+    if (
+      cached?.version === FACE_SURFACE_PROFILE_CACHE_VERSION
+      && cached?.headUuid === faceCache.headUuid
+      && Array.isArray(cached.contourLocal)
+      && cached.contourLocal.length === 17
+      && cached?.metrics
+    ) {
+      return cached;
+    }
+
+    const samplesCache = ensureCharacterHeadFaceShapeCache(
+      character,
+      faceCache,
+      headBone,
+      localEyeMid,
+      localRightVec,
+      localDownVec,
+      localForwardVec,
+    );
+    const samples = samplesCache?.samples;
+    if (!Array.isArray(samples) || samples.length < 24) return null;
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const percentile = (sortedValues, t) => {
+      if (!Array.isArray(sortedValues) || !sortedValues.length) return 0;
+      const idx = (sortedValues.length - 1) * clamp(Number(t ?? 0), 0, 1);
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      const mix = idx - lo;
+      if (lo === hi) return sortedValues[lo];
+      return (sortedValues[lo] * (1 - mix)) + (sortedValues[hi] * mix);
+    };
+    const sortedW = samples.map((p) => p.w).sort((a, b) => a - b);
+    const frontCut = percentile(sortedW, 0.55);
+    const frontSamples = samples.filter((p) => p.w >= frontCut);
+    const fitSamples = frontSamples.length >= 24 ? frontSamples : samples;
+    const sortedFrontW = fitSamples.map((p) => p.w).sort((a, b) => a - b);
+    const sortedFrontV = fitSamples.map((p) => p.v).sort((a, b) => a - b);
+    const localNoseDown = Math.max(localEyeDist * 0.35, localNoseVector.dot(localDownVec));
+    const chinV = Math.max(localNoseDown * 2.0, percentile(sortedFrontV, 0.985));
+    const contourTopV = clamp(
+      Math.min(localNoseDown * 0.12, localEyeDist * 0.10),
+      -localEyeDist * 0.02,
+      chinV - Math.max(localEyeDist * 0.95, localNoseDown * 1.15),
+    );
+    const upperBandMin = contourTopV;
+    const upperBandMax = contourTopV + ((chinV - contourTopV) * 0.28);
+    const upperBand = fitSamples.filter((p) => p.v >= upperBandMin && p.v <= upperBandMax);
+    const widthSamples = upperBand.length >= 12 ? upperBand : fitSamples;
+    const bandAbsU = widthSamples.map((p) => Math.abs(p.u)).sort((a, b) => a - b);
+    const halfWidth = Math.max(localEyeDist * 1.02, percentile(bandAbsU, 0.90) * 0.84);
+    const noseForward = localNoseVector.dot(localForwardVec);
+    const facePlaneW = clamp(
+      Math.min(noseForward - (localEyeDist * 0.08), percentile(sortedFrontW, 0.72)),
+      percentile(sortedFrontW, 0.40),
+      percentile(sortedFrontW, 0.82),
+    );
+
+    const contourLocal = Array.from({ length: 17 }, (_, idx) => {
+      const xNorm = -1 + ((idx / 16) * 2);
+      const yNorm = Math.sqrt(Math.max(0, 1 - (xNorm * xNorm)));
+      return localEyeMid.clone()
+        .addScaledVector(localRightVec, xNorm * halfWidth)
+        .addScaledVector(localDownVec, contourTopV + (yNorm * (chinV - contourTopV)))
+        .addScaledVector(localForwardVec, facePlaneW);
+    });
+
+    character.faceSurfaceProfileCache = {
+      version: FACE_SURFACE_PROFILE_CACHE_VERSION,
+      headUuid: faceCache.headUuid,
+      contourLocal,
+      metrics: {
+        contourTopV,
+        chinV,
+        halfWidth,
+        facePlaneW,
+        localNoseDown,
+      },
+    };
+    return character.faceSurfaceProfileCache;
+  }
+
+  function getCharacterFaceMask2d(character, width, height, frameRect = null) {
+    if (!character || !three) return null;
+    const worldFace = getCachedFaceLandmarksWorld(character, width, height);
+    const cache = ensureFaceLandmarkCache(character, width, height);
+    if (!worldFace?.nose || !worldFace?.reye || !worldFace?.leye || !worldFace?.rear || !worldFace?.lear || !cache?.headUuid) {
+      return null;
+    }
+    const headBone = character.bones?.find?.((b) => b.uuid === cache.headUuid) || null;
+    if (!headBone) return null;
+
+    const project = (worldPoint) => projectWorldToOverlay(worldPoint, width, height, frameRect);
+    const projectBone = (bone) => {
+      if (!bone) return null;
+      const pos = new three.Vector3();
+      bone.getWorldPosition(pos);
+      return project(pos);
+    };
+    const leftEye2d = project(worldFace.leye);
+    const rightEye2d = project(worldFace.reye);
+    const nose2d = project(worldFace.nose);
+    const leftEar2d = project(worldFace.lear);
+    const rightEar2d = project(worldFace.rear);
+    const neckBone = findBoneByAliases(character.boneNameMap, OPENPOSE_TO_BONE.Neck || []);
+    const neck2d = projectBone(neckBone);
+    if (!leftEye2d || !rightEye2d || !nose2d) return null;
+
+    const average2d = (points) => {
+      const valid = Array.isArray(points)
+        ? points.filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y))
+        : [];
+      if (!valid.length) return null;
+      const sum = valid.reduce((acc, p) => ({ x: acc.x + p.x, y: acc.y + p.y }), { x: 0, y: 0 });
+      return { x: sum.x / valid.length, y: sum.y / valid.length };
+    };
+    const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+    const lerp2d = (a, b, t) => ({
+      x: a.x + ((b.x - a.x) * t),
+      y: a.y + ((b.y - a.y) * t),
+    });
+    const dot2d = (a, b) => (a.x * b.x) + (a.y * b.y);
+    const eyeMid2d = average2d([leftEye2d, rightEye2d]);
+    if (!eyeMid2d) return null;
+    const eyeVector2d = {
+      x: rightEye2d.x - leftEye2d.x,
+      y: rightEye2d.y - leftEye2d.y,
+    };
+    const eyeDist2d = Math.hypot(eyeVector2d.x, eyeVector2d.y);
+    if (!Number.isFinite(eyeDist2d) || eyeDist2d <= 1e-5) return null;
+    const right2d = {
+      x: eyeVector2d.x / eyeDist2d,
+      y: eyeVector2d.y / eyeDist2d,
+    };
+    let down2d = {
+      x: -right2d.y,
+      y: right2d.x,
+    };
+    const downHint2d = neck2d || nose2d;
+    const eyeToDownHint2d = {
+      x: downHint2d.x - eyeMid2d.x,
+      y: downHint2d.y - eyeMid2d.y,
+    };
+    if (dot2d(eyeToDownHint2d, down2d) < 0) {
+      down2d = { x: -down2d.x, y: -down2d.y };
+    }
+    const up2d = {
+      x: -down2d.x,
+      y: -down2d.y,
+    };
+    const eyeToNose2d = {
+      x: nose2d.x - eyeMid2d.x,
+      y: nose2d.y - eyeMid2d.y,
+    };
+    const noseToEyes2d = Math.max(eyeDist2d * 0.55, Math.abs(dot2d(eyeToNose2d, up2d)));
+    const offset2d = (anchor, alongRight = 0, alongUp = 0) => ({
+      x: anchor.x + (right2d.x * alongRight) + (up2d.x * alongUp),
+      y: anchor.y + (right2d.y * alongRight) + (up2d.y * alongUp),
+    });
+    const buildPolyline2d = (center, xFactors, yFactors, xScale, yScale) => (
+      xFactors.map((xFactor, idx) => offset2d(
+        center,
+        xFactor * xScale,
+        (yFactors[idx] ?? 0) * yScale,
+      ))
+    );
+    const percentile = (sortedValues, t) => {
+      if (!Array.isArray(sortedValues) || !sortedValues.length) return 0;
+      const idx = (sortedValues.length - 1) * clamp(Number(t ?? 0), 0, 1);
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      const mix = idx - lo;
+      if (lo === hi) return sortedValues[lo];
+      return (sortedValues[lo] * (1 - mix)) + (sortedValues[hi] * mix);
+    };
+
+    let contour2d = null;
+    let faceMetrics = null;
+    const localFrame = getCharacterHeadLocalFrame(character, cache, headBone);
+    const localEyeDist = localFrame?.localEyeDist ?? 0;
+    const localNoseVector = localFrame?.localNoseVector || null;
+    if (character.modelRoot && localFrame && Number.isFinite(localEyeDist) && localEyeDist > 1e-5) {
+      const faceProfile = ensureCharacterFaceSurfaceProfile(
+        character,
+        cache,
+        headBone,
+        localFrame.localEyeMid,
+        localFrame.localRightVec,
+        localFrame.localDownVec,
+        localFrame.localForwardVec,
+        localEyeDist,
+        localNoseVector,
+      );
+      if (Array.isArray(faceProfile?.contourLocal) && faceProfile.contourLocal.length >= 17) {
+        faceMetrics = faceProfile.metrics || null;
+        headBone.updateMatrixWorld(true);
+        contour2d = faceProfile.contourLocal.map((pointLocal) => {
+          if (!pointLocal?.clone) return null;
+          return project(pointLocal.clone().applyMatrix4(headBone.matrixWorld));
+        });
+      }
+    }
+
+    if (!contour2d) {
+      return null;
+    }
+
+    const decomposeLocal = (pointLocal) => {
+      if (!pointLocal?.clone || !localFrame) return null;
+      const relative = pointLocal.clone().sub(localFrame.localEyeMid);
+      return {
+        u: relative.dot(localFrame.localRightVec),
+        v: relative.dot(localFrame.localDownVec),
+        w: relative.dot(localFrame.localForwardVec),
+      };
+    };
+    const composeLocal = (u, v, w = 0) => {
+      if (!localFrame) return null;
+      return localFrame.localEyeMid.clone()
+        .addScaledVector(localFrame.localRightVec, u)
+        .addScaledVector(localFrame.localDownVec, v)
+        .addScaledVector(localFrame.localForwardVec, w);
+    };
+    const projectLocalPoint = (pointLocal) => {
+      if (!pointLocal?.clone) return null;
+      const pointWorld = pointLocal.clone().applyMatrix4(headBone.matrixWorld);
+      return project(pointWorld);
+    };
+    const buildPolylineLocal = (centerLocal, xFactors, yFactors, xScale, yScale, forwardOffset = 0) => {
+      if (!centerLocal?.clone) return [];
+      const centerUv = decomposeLocal(centerLocal);
+      if (!centerUv) return [];
+      const baseW = centerUv.w + forwardOffset;
+      return xFactors.map((xFactor, idx) => (
+        projectLocalPoint(composeLocal(
+          centerUv.u + (xFactor * xScale),
+          centerUv.v - ((yFactors[idx] ?? 0) * yScale),
+          baseW,
+        ))
+      ));
+    };
+
+    const leftEyeVisible = true;
+    const rightEyeVisible = true;
+    const facePlaneW = faceMetrics?.facePlaneW ?? 0;
+    const localNoseDown = faceMetrics?.localNoseDown ?? Math.max(localEyeDist * 0.35, localNoseVector.dot(localFrame.localDownVec));
+    const localContourTopV = faceMetrics?.contourTopV ?? Math.min(localNoseDown * 0.12, localEyeDist * 0.10);
+    const localChinV = faceMetrics?.chinV ?? Math.max(localNoseDown * 2.0, localNoseDown + localEyeDist * 1.5);
+    const localFaceHalfWidth = faceMetrics?.halfWidth ?? Math.max(localEyeDist, localEyeDist * 1.02);
+    const leftEyeLocal = cache.local.leye.clone();
+    const rightEyeLocal = cache.local.reye.clone();
+    const noseLocalUv = decomposeLocal(cache.local.nose);
+    const leftEyeLocalUv = decomposeLocal(leftEyeLocal);
+    const rightEyeLocalUv = decomposeLocal(rightEyeLocal);
+    const facePlaneEyeV = (leftEyeLocalUv && rightEyeLocalUv) ? ((leftEyeLocalUv.v + rightEyeLocalUv.v) * 0.5) : 0;
+    const leftEyePlaneLocal = leftEyeLocalUv ? composeLocal(leftEyeLocalUv.u, facePlaneEyeV, facePlaneW) : null;
+    const rightEyePlaneLocal = rightEyeLocalUv ? composeLocal(rightEyeLocalUv.u, facePlaneEyeV, facePlaneW) : null;
+
+    const browHalfWidth = localEyeDist * 0.30;
+    const browHeight = Math.max(localEyeDist * 0.10, localNoseDown * 0.16);
+    const browLift = Math.max(localEyeDist * 0.26, localNoseDown * 0.30);
+    const leftBrowCenterLocal = leftEyeLocalUv ? composeLocal(leftEyeLocalUv.u, facePlaneEyeV - browLift, facePlaneW) : null;
+    const rightBrowCenterLocal = rightEyeLocalUv ? composeLocal(rightEyeLocalUv.u, facePlaneEyeV - browLift, facePlaneW) : null;
+    const leftBrow = leftEyeVisible ? buildPolylineLocal(
+      leftBrowCenterLocal,
+      [-1.00, -0.52, 0.0, 0.52, 1.00],
+      [0.00, 0.10, 0.16, 0.10, -0.01],
+      browHalfWidth,
+      browHeight,
+    ) : [];
+    const rightBrow = rightEyeVisible ? buildPolylineLocal(
+      rightBrowCenterLocal,
+      [-1.00, -0.52, 0.0, 0.52, 1.00],
+      [-0.01, 0.10, 0.16, 0.10, 0.00],
+      browHalfWidth,
+      browHeight,
+    ) : [];
+
+    const eyeWidth = localEyeDist * 0.15;
+    const eyeHeight = Math.max(localEyeDist * 0.07, localNoseDown * 0.10);
+    const leftEyeLoop = leftEyeVisible ? buildPolylineLocal(
+      leftEyePlaneLocal,
+      [-1.00, -0.45, 0.28, 1.00, 0.28, -0.45],
+      [0.00, 0.58, 0.64, 0.00, -0.48, -0.44],
+      eyeWidth,
+      eyeHeight,
+    ) : [];
+    const rightEyeLoop = rightEyeVisible ? buildPolylineLocal(
+      rightEyePlaneLocal,
+      [-1.00, -0.28, 0.45, 1.00, 0.45, -0.28],
+      [0.00, 0.64, 0.58, 0.00, -0.44, -0.48],
+      eyeWidth,
+      eyeHeight,
+    ) : [];
+
+    const noseBridgeTop = noseLocalUv
+      ? projectLocalPoint(composeLocal(0, localNoseDown * 0.16, facePlaneW))
+      : null;
+    const noseBridge1 = (noseBridgeTop && nose2d) ? lerp2d(noseBridgeTop, nose2d, 0.40) : null;
+    const noseBridge2 = (noseBridgeTop && nose2d) ? lerp2d(noseBridgeTop, nose2d, 0.72) : null;
+    const noseWingHalf = localEyeDist * 0.13;
+    const noseBaseDrop = localNoseDown * 0.10;
+    const noseBaseCenterLocal = noseLocalUv
+      ? composeLocal(0, noseLocalUv.v + (noseBaseDrop * 0.30), facePlaneW)
+      : null;
+    const noseBase = [
+      noseBaseCenterLocal ? projectLocalPoint(composeLocal(noseLocalUv.u - noseWingHalf, noseLocalUv.v + (noseBaseDrop * 0.18), facePlaneW)) : null,
+      noseBaseCenterLocal ? projectLocalPoint(composeLocal(noseLocalUv.u - (noseWingHalf * 0.42), noseLocalUv.v + (noseBaseDrop * 0.06), facePlaneW)) : null,
+      noseBaseCenterLocal ? projectLocalPoint(composeLocal(noseLocalUv.u, noseLocalUv.v - (noseBaseDrop * 0.18), facePlaneW)) : null,
+      noseBaseCenterLocal ? projectLocalPoint(composeLocal(noseLocalUv.u + (noseWingHalf * 0.42), noseLocalUv.v + (noseBaseDrop * 0.06), facePlaneW)) : null,
+      noseBaseCenterLocal ? projectLocalPoint(composeLocal(noseLocalUv.u + noseWingHalf, noseLocalUv.v + (noseBaseDrop * 0.18), facePlaneW)) : null,
+    ];
+
+    const mouthCenterV = localContourTopV + ((localChinV - localContourTopV) * 0.60);
+    const mouthCenterLocal = composeLocal(0, mouthCenterV, facePlaneW);
+    const mouthHalfWidth = Math.max(localEyeDist * 0.22, localFaceHalfWidth * 0.24);
+    const mouthHeight = Math.max(localEyeDist * 0.09, (localChinV - localContourTopV) * 0.065);
+    const mouthOuter = buildPolylineLocal(
+      mouthCenterLocal,
+      [-1.00, -0.56, -0.18, 0.18, 0.56, 1.00, 0.44, 0, -0.44],
+      [0.00, 0.14, 0.22, 0.22, 0.14, 0.00, -0.20, -0.28, -0.20],
+      mouthHalfWidth,
+      mouthHeight,
+    );
+
+    return {
+      contour: contour2d,
+      leftBrow,
+      rightBrow,
+      noseBridge: [noseBridgeTop, noseBridge1, noseBridge2, nose2d].filter(Boolean),
+      noseBase,
+      leftEye: leftEyeLoop,
+      rightEye: rightEyeLoop,
+      mouth: mouthOuter,
+    };
+  }
+
+  function drawSmoothClosedOverlayPath(ctx, points) {
+    const valid = Array.isArray(points)
+      ? points.filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y))
+      : [];
+    if (valid.length < 3) return false;
+    const midpoint = (a, b) => ({
+      x: (a.x + b.x) * 0.5,
+      y: (a.y + b.y) * 0.5,
+    });
+    const start = midpoint(valid[valid.length - 1], valid[0]);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    for (let i = 0; i < valid.length; i += 1) {
+      const current = valid[i];
+      const next = valid[(i + 1) % valid.length];
+      const mid = midpoint(current, next);
+      ctx.quadraticCurveTo(current.x, current.y, mid.x, mid.y);
+    }
+    ctx.closePath();
+    return true;
+  }
+
+  function drawSmoothOpenOverlayPath(ctx, points) {
+    const valid = Array.isArray(points)
+      ? points.filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y))
+      : [];
+    if (valid.length < 2) return false;
+    if (valid.length === 2) {
+      ctx.beginPath();
+      ctx.moveTo(valid[0].x, valid[0].y);
+      ctx.lineTo(valid[1].x, valid[1].y);
+      return true;
+    }
+    const midpoint = (a, b) => ({
+      x: (a.x + b.x) * 0.5,
+      y: (a.y + b.y) * 0.5,
+    });
+    ctx.beginPath();
+    ctx.moveTo(valid[0].x, valid[0].y);
+    for (let i = 1; i < valid.length - 1; i += 1) {
+      const current = valid[i];
+      const next = valid[i + 1];
+      const mid = midpoint(current, next);
+      ctx.quadraticCurveTo(current.x, current.y, mid.x, mid.y);
+    }
+    const last = valid[valid.length - 1];
+    ctx.quadraticCurveTo(last.x, last.y, last.x, last.y);
+    return true;
+  }
+
+  function drawOverlayPolyline(ctx, points, { close = false, smooth = false } = {}) {
+    const valid = Array.isArray(points)
+      ? points.filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y))
+      : [];
+    if (valid.length < 2) return false;
+    if (smooth && close) {
+      return drawSmoothClosedOverlayPath(ctx, valid);
+    }
+    if (smooth) {
+      return drawSmoothOpenOverlayPath(ctx, valid);
+    }
+    ctx.beginPath();
+    ctx.moveTo(valid[0].x, valid[0].y);
+    for (let i = 1; i < valid.length; i += 1) {
+      ctx.lineTo(valid[i].x, valid[i].y);
+    }
+    if (close) {
+      ctx.closePath();
+    }
+    return true;
+  }
+
+  function drawOpenPoseHandsAndFace(ctx, character, width, height, frameRect, style, options = {}) {
+    if (!character) return;
+    const lineWidth = Number(style?.lineWidth || 3);
+    const pointRadius = Number(style?.pointRadius || 4);
+    if (options.drawHands) {
+      ["left", "right"].forEach((side, sideIdx) => {
+        const hand = getCharacterHandPose2d(character, side, width, height, frameRect);
+        if (!hand) return;
+        OPENPOSE_HAND_CONNECTIONS.forEach(([a, b], edgeIdx) => {
+          const pa = hand[a];
+          const pb = hand[b];
+          if (!pa || !pb) return;
+          ctx.strokeStyle = OPENPOSE_COLORS[(edgeIdx + (sideIdx * 5)) % OPENPOSE_COLORS.length];
+          ctx.lineWidth = Math.max(1.1, lineWidth * 0.72);
+          ctx.beginPath();
+          ctx.moveTo(pa.x, pa.y);
+          ctx.lineTo(pb.x, pb.y);
+          ctx.stroke();
+        });
+        hand.forEach((p, idx) => {
+          if (!p) return;
+          ctx.fillStyle = OPENPOSE_COLORS[(idx + (sideIdx * 7)) % OPENPOSE_COLORS.length];
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, Math.max(1.5, pointRadius * 0.72), 0, Math.PI * 2);
+          ctx.fill();
+        });
+      });
+    }
+    if (options.drawFaceMask) {
+      const faceMask = getCharacterFaceMask2d(character, width, height, frameRect);
+      if (faceMask) {
+        ctx.save();
+        ctx.strokeStyle = "#8ecbff";
+        ctx.lineWidth = Math.max(1.0, lineWidth * 0.64);
+
+        const drawGroup = (points, opts = {}) => {
+          if (!drawOverlayPolyline(ctx, points, opts)) return;
+          ctx.stroke();
+          const valid = Array.isArray(points)
+            ? points.filter((p) => p && Number.isFinite(p.x) && Number.isFinite(p.y))
+            : [];
+          valid.forEach((p) => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, Math.max(1.0, pointRadius * 0.33), 0, Math.PI * 2);
+            ctx.fillStyle = "#8ecbff";
+            ctx.fill();
+          });
+        };
+
+        drawGroup(faceMask.contour, { smooth: true });
+        drawGroup(faceMask.leftBrow);
+        drawGroup(faceMask.rightBrow);
+        drawGroup(faceMask.noseBridge);
+        drawGroup(faceMask.noseBase);
+        drawGroup(faceMask.leftEye, { close: true });
+        drawGroup(faceMask.rightEye, { close: true });
+        drawGroup(faceMask.mouth, { close: true });
+        ctx.restore();
+      }
+    }
   }
 
   function distance2d(a, b) {
@@ -4529,6 +6999,7 @@ function buildOverlay(node, widget, stateRef) {
 
     const frameRect = getRenderFrameRect(overlayCanvas.width, overlayCanvas.height);
     const strokeStyle = getOpenPoseStrokeStyle(frameRect.width, frameRect.height);
+    const drawOptions = getOpenPoseRenderOptions();
 
     // Shade outside active render region so camera framing is explicit.
     ctx.fillStyle = "rgba(2, 4, 8, 0.36)";
@@ -4546,6 +7017,7 @@ function buildOverlay(node, widget, stateRef) {
       drawCharacters.forEach((ch, idx) => {
         const pose2d = computeOpenPosePositions2d(overlayCanvas.width, overlayCanvas.height, frameRect, ch);
         drawOpenPoseSkeleton(ctx, pose2d, strokeStyle);
+        drawOpenPoseHandsAndFace(ctx, ch, overlayCanvas.width, overlayCanvas.height, frameRect, strokeStyle, drawOptions);
         if (!activePositions && (ch.id === activeCharacterId || idx === 0)) {
           activePositions = pose2d;
         }
@@ -4556,9 +7028,9 @@ function buildOverlay(node, widget, stateRef) {
       drawOpenPoseSkeleton(ctx, activePositions, strokeStyle);
     }
 
-    // Extra head contour for readability.
+    // Extra head contour for readability when no explicit face overlay is drawn.
     const hp = [activePositions[16], activePositions[14], activePositions[0], activePositions[15], activePositions[17]];
-    if (hp.every(Boolean)) {
+    if (!drawOptions.drawFaceMask && hp.every(Boolean)) {
       ctx.strokeStyle = "#8ecbff";
       ctx.lineWidth = 2;
       ctx.beginPath();
@@ -4677,11 +7149,37 @@ function buildOverlay(node, widget, stateRef) {
 
   function restoreStateAfterLoad() {
     if (!savedPayload) return;
+    restoreRenderOptionsFromPayload(savedPayload);
+    const savedPanelWidths = savedPayload?.ui?.panel_widths;
+    if (savedPanelWidths && typeof savedPanelWidths === "object") {
+      panelWidths.left = Math.max(240, Math.min(520, Number(savedPanelWidths.left || panelWidths.left)));
+      panelWidths.right = Math.max(280, Math.min(560, Number(savedPanelWidths.right || panelWidths.right)));
+      applyPanelLayout();
+    }
     if (Array.isArray(savedPayload.characters) && savedPayload.characters.length) {
       savedPayload.characters.forEach((savedCharacter) => {
         const target = characters.find((ch) => ch.id === savedCharacter.id)
           || characters.find((ch) => ch.name === savedCharacter.name);
         if (!target) return;
+        const sceneRoot = getCharacterSceneRoot(target);
+        if (sceneRoot) {
+          sceneRoot.position.set(0, 0, 0);
+          sceneRoot.quaternion.identity();
+          sceneRoot.scale.set(1, 1, 1);
+          const savedTransform = savedCharacter.scene_transform;
+          if (savedTransform && typeof savedTransform === "object") {
+            if (Array.isArray(savedTransform.position) && savedTransform.position.length === 3) {
+              sceneRoot.position.set(savedTransform.position[0], savedTransform.position[1], savedTransform.position[2]);
+            }
+            if (Array.isArray(savedTransform.quaternion) && savedTransform.quaternion.length === 4) {
+              sceneRoot.quaternion.set(savedTransform.quaternion[0], savedTransform.quaternion[1], savedTransform.quaternion[2], savedTransform.quaternion[3]);
+            }
+            if (Array.isArray(savedTransform.scale) && savedTransform.scale.length === 3) {
+              sceneRoot.scale.set(savedTransform.scale[0], savedTransform.scale[1], savedTransform.scale[2]);
+            }
+            sceneRoot.updateMatrixWorld(true);
+          }
+        }
         resetCharacterToBindPose(target);
         applyPoseToBones(target.bones, savedCharacter.pose || []);
       });
@@ -4691,6 +7189,41 @@ function buildOverlay(node, widget, stateRef) {
         resetCharacterToBindPose(active);
       }
       applyPoseToBones(bones, savedPayload.pose || []);
+    }
+    if (Array.isArray(savedPayload.objects) && savedPayload.objects.length) {
+      savedPayload.objects.forEach((savedObject) => {
+        const target = sceneObjects.find((obj) => obj.id === savedObject.id)
+          || sceneObjects.find((obj) => obj.name === savedObject.name);
+        if (!target) return;
+        target.shapeType = savedObject.shape_type || savedObject.shapeType || target.shapeType;
+        target.params = {
+          ...getPrimitiveDefaults(target.shapeType),
+          ...(savedObject.params && typeof savedObject.params === "object" ? savedObject.params : {}),
+        };
+        if (Number.isFinite(Number(savedObject.color_hex ?? savedObject.colorHex))) {
+          target.colorHex = Number(savedObject.color_hex ?? savedObject.colorHex);
+        }
+        rebuildSceneObjectGeometry(target);
+        const sceneRoot = getSceneObjectRoot(target);
+        if (sceneRoot) {
+          sceneRoot.position.set(0, 0, 0);
+          sceneRoot.quaternion.identity();
+          sceneRoot.scale.set(1, 1, 1);
+          const savedTransform = savedObject.scene_transform;
+          if (savedTransform && typeof savedTransform === "object") {
+            if (Array.isArray(savedTransform.position) && savedTransform.position.length === 3) {
+              sceneRoot.position.set(savedTransform.position[0], savedTransform.position[1], savedTransform.position[2]);
+            }
+            if (Array.isArray(savedTransform.quaternion) && savedTransform.quaternion.length === 4) {
+              sceneRoot.quaternion.set(savedTransform.quaternion[0], savedTransform.quaternion[1], savedTransform.quaternion[2], savedTransform.quaternion[3]);
+            }
+            if (Array.isArray(savedTransform.scale) && savedTransform.scale.length === 3) {
+              sceneRoot.scale.set(savedTransform.scale[0], savedTransform.scale[1], savedTransform.scale[2]);
+            }
+          }
+          sceneRoot.updateMatrixWorld(true);
+        }
+      });
     }
     refreshSkinnedMeshes();
 
@@ -4712,6 +7245,9 @@ function buildOverlay(node, widget, stateRef) {
       buildCameraTabs();
       applySlotToCamera(0);
       updateOrbitDistanceLimits();
+    }
+    if (savedPayload.active_selection && typeof savedPayload.active_selection === "object") {
+      applyActiveSceneSelection(savedPayload.active_selection);
     }
     syncInputsFromBone();
   }
@@ -4854,15 +7390,21 @@ function buildOverlay(node, widget, stateRef) {
 
     renderer.outputEncoding = three.sRGBEncoding;
     renderer.toneMapping = three.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
-    renderer.setClearColor(0x0a0d13, 1);
+    renderer.toneMappingExposure = 1.45;
+    renderer.setClearColor(0x111826, 1);
 
-    const hemi = new three.HemisphereLight(0xffffff, 0x445566, 0.6);
+    const hemi = new three.HemisphereLight(0xf8fbff, 0x5b6b83, 1.35);
     scene.add(hemi);
-    const dir = new three.DirectionalLight(0xffffff, 0.9);
-    dir.position.set(3, 6, 4);
+    const amb = new three.AmbientLight(0xffffff, 0.55);
+    scene.add(amb);
+    const dir = new three.DirectionalLight(0xffffff, 1.6);
+    dir.position.set(3.5, 7, 4.5);
     dir.castShadow = false;
     scene.add(dir);
+    const fill = new three.DirectionalLight(0xdbeafe, 0.95);
+    fill.position.set(-4.5, 3.2, -2.2);
+    fill.castShadow = false;
+    scene.add(fill);
 
     addGroundAndOrigin();
 
@@ -4951,7 +7493,7 @@ function buildOverlay(node, widget, stateRef) {
       }
       window.addEventListener("resize", resizeRenderer);
     }
-    setStatus("Ready. Use the + tab to add character(s) from meshes/human_rig.");
+    setStatus("Ready. Use Add Character or Add Object to build the scene.");
     threeReady = true;
   }
 
@@ -4967,9 +7509,16 @@ function buildOverlay(node, widget, stateRef) {
       if (!obj) {
         throw new Error("Model parser returned an empty result.");
       }
+      normalizeImportedModelScale(obj, sourceName);
+      const groundedBounds = computeModelBounds(obj);
+      if (groundedBounds) {
+        obj.position.y -= groundedBounds.min.y;
+        obj.updateMatrixWorld(true);
+      }
       const character = {
         id: options?.id || `char_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         name: sourceName,
+        sceneRoot: new three.Group(),
         modelRoot: obj,
         skeletonHelper: null,
         bones: [],
@@ -4981,7 +7530,9 @@ function buildOverlay(node, widget, stateRef) {
         meshBuffer: cloneArrayBuffer(arrayBuffer),
       };
 
-      scene.add(character.modelRoot);
+      character.sceneRoot.name = `${sourceName} Root`;
+      character.sceneRoot.add(character.modelRoot);
+      scene.add(character.sceneRoot);
       const helper = new three.SkeletonHelper(character.modelRoot);
       helper.visible = false;
       helper.material.linewidth = 2;
@@ -5013,20 +7564,9 @@ function buildOverlay(node, widget, stateRef) {
         if (!child.isMesh) return;
         const mats = Array.isArray(child.material) ? child.material : [child.material];
         mats.forEach((m) => {
-          if (!m) return;
-          m.side = three.FrontSide;
-          m.depthWrite = true;
-          m.depthTest = true;
-          if (!m.map && !m.vertexColors && m.color) {
-            m.color.set(0x888888);
-            if ("metalness" in m) m.metalness = 0.05;
-            if ("roughness" in m) m.roughness = 0.8;
-          }
-          m.opacity = 1.0;
-          m.transparent = false;
-          m.needsUpdate = true;
+          sanitizeImportedMeshMaterial(child, m);
         });
-        if (child.isSkinnedMesh && child.geometry && !child.geometry.attributes.normal) {
+        if (child.geometry && !child.geometry.attributes.normal) {
           child.geometry.computeVertexNormals();
         }
       });
@@ -5048,9 +7588,8 @@ function buildOverlay(node, widget, stateRef) {
       sharedSession.characters = characters;
       sharedSession.activeCharacterId = character.id;
 
-      applyActiveCharacter(character);
+      applyActiveSceneSelection({ kind: "character", id: character.id });
       refreshCharacterTabs();
-      populateBones();
       if (characters.length === 1) {
         frameModel();
       }
@@ -5117,6 +7656,8 @@ function buildOverlay(node, widget, stateRef) {
   fovRange.number.addEventListener("input", () => fovOnChange(Number(fovRange.number.value)));
   camWidthInput.addEventListener("change", () => applyResolutionInputsToSlot());
   camHeightInput.addEventListener("change", () => applyResolutionInputsToSlot());
+  enableHorizontalResize(leftSplitter, "left");
+  enableHorizontalResize(rightSplitter, "right");
   mirrorCheck.addEventListener("change", () => {
     mirrorEnabled = Boolean(mirrorCheck.checked && mirroredBone);
     if (mirrorEnabled && selectedBone && mirroredBone) {
@@ -5124,6 +7665,42 @@ function buildOverlay(node, widget, stateRef) {
     } else {
       setStatus("Mirror OFF");
     }
+  });
+  addCharacterBtn.addEventListener("click", async () => {
+    try {
+      const items = await getRiggedMeshList();
+      if (!items.length) {
+        setStatus("No rigged meshes found in meshes/fbx.");
+        return;
+      }
+      const selectedName = await pickRiggedMeshName(items);
+      if (!selectedName) return;
+      if (!items.includes(selectedName)) {
+        setStatus("Selected mesh is not in repository list.");
+        return;
+      }
+      const buf = await fetchRiggedMeshBuffer(selectedName);
+      await loadModelFromFile({ name: selectedName, arrayBuffer: async () => buf }, buf);
+    } catch (err) {
+      setStatus(`Failed repository load: ${err?.message || err}`);
+    }
+  });
+  addObjectBtn.addEventListener("click", async () => {
+    const shapeType = await pickPrimitiveShapeType();
+    if (!shapeType) return;
+    const sceneObject = createPrimitiveSceneObject(shapeType);
+    if (!sceneObject) {
+      setStatus("Failed to create object.");
+      return;
+    }
+    applyActiveSceneSelection({ kind: "object", id: sceneObject.id });
+    refreshCharacterTabs();
+    renderSelectionDetails();
+    if (characters.length + sceneObjects.length === 1) {
+      frameModel();
+    }
+    scheduleHistoryCapture(80);
+    setStatus(`Added ${getPrimitiveShapeLabel(shapeType)}.`);
   });
 
   const updateNodeState = () => {
@@ -5141,6 +7718,10 @@ function buildOverlay(node, widget, stateRef) {
   });
 
   savePoseBtn.addEventListener("click", () => {
+    if (activeSelection?.kind !== "character") {
+      setStatus("Select a character to save a pose.");
+      return;
+    }
     const active = getActiveCharacter();
     if (!active || !Array.isArray(active.bones) || !active.bones.length) {
       setStatus("No active character to save pose.");
@@ -5172,6 +7753,10 @@ function buildOverlay(node, widget, stateRef) {
   });
 
   loadPoseBtn.addEventListener("click", async () => {
+    if (activeSelection?.kind !== "character") {
+      setStatus("Select a character to load a pose.");
+      return;
+    }
     const payload = await pickJsonFile();
     if (!payload) return;
     const active = getActiveCharacter();
@@ -5301,6 +7886,7 @@ function buildOverlay(node, widget, stateRef) {
   if (stateRef.value && hasExplicitNodeState()) {
     try {
       savedPayload = JSON.parse(stateRef.value);
+      restoreRenderOptionsFromPayload(savedPayload);
     } catch (err) {
       console.warn("Failed to parse saved pose state", err);
     }
@@ -5311,20 +7897,25 @@ function buildOverlay(node, widget, stateRef) {
       suppressHistory = true;
       try {
         characters = Array.isArray(sharedSession.characters) ? sharedSession.characters : [];
+        sceneObjects = Array.isArray(sharedSession.sceneObjects) ? sharedSession.sceneObjects : [];
         activeCharacterId = sharedSession.activeCharacterId || null;
+        activeSelection = sharedSession.activeSelection && typeof sharedSession.activeSelection === "object"
+          ? { ...sharedSession.activeSelection }
+          : null;
         ensureCharactersAttachedToScene();
         refreshCharacterTabs();
 
-        if (characters.length) {
-          applyActiveCharacter(getActiveCharacter());
-          populateBones();
+        if (characters.length || sceneObjects.length) {
+          const nextSelection = activeSelection
+            || (characters[0] ? { kind: "character", id: characters[0].id } : (sceneObjects[0] ? { kind: "object", id: sceneObjects[0].id } : null));
+          applyActiveSceneSelection(nextSelection);
           restoreStateAfterLoad();
-          setStatus(`Loaded ${characters.length} character(s).`);
+          setStatus(`Loaded ${characters.length} character(s), ${sceneObjects.length} object(s).`);
           return;
         }
 
-        if (Array.isArray(savedPayload?.characters) && savedPayload.characters.length) {
-          for (const ch of savedPayload.characters) {
+        if ((Array.isArray(savedPayload?.characters) && savedPayload.characters.length) || (Array.isArray(savedPayload?.objects) && savedPayload.objects.length)) {
+          for (const ch of (Array.isArray(savedPayload?.characters) ? savedPayload.characters : [])) {
             if (!ch?.mesh_b64) continue;
             const ext = ch.mesh_ext || "fbx";
             const name = ch.name || `cached.${ext}`;
@@ -5335,15 +7926,26 @@ function buildOverlay(node, widget, stateRef) {
               { id: ch.id, name, meshExt: ext },
             );
           }
-          if (savedPayload.active_character_id) {
-            const active = characters.find((c) => c.id === savedPayload.active_character_id) || characters[0];
-            applyActiveCharacter(active || null);
+          if (Array.isArray(savedPayload?.objects) && savedPayload.objects.length) {
+            savedPayload.objects.forEach((obj) => {
+              createPrimitiveSceneObject(obj.shape_type || obj.shapeType || "cube", {
+                id: obj.id,
+                name: obj.name,
+                params: obj.params,
+                colorHex: obj.color_hex || obj.colorHex,
+                transform: obj.scene_transform,
+              });
+            });
           }
-          if (characters.length) {
+          if (characters.length || sceneObjects.length) {
+            const nextSelection = savedPayload.active_selection
+              || (savedPayload.active_character_id
+                ? { kind: "character", id: savedPayload.active_character_id }
+                : (characters[0] ? { kind: "character", id: characters[0].id } : (sceneObjects[0] ? { kind: "object", id: sceneObjects[0].id } : null)));
+            applyActiveSceneSelection(nextSelection);
             restoreStateAfterLoad();
             refreshCharacterTabs();
-            populateBones();
-            setStatus(`Loaded ${characters.length} character(s).`);
+            setStatus(`Loaded ${characters.length} character(s), ${sceneObjects.length} object(s).`);
             return;
           }
         }
@@ -5356,11 +7958,10 @@ function buildOverlay(node, widget, stateRef) {
           await loadModelFromFile({ name, arrayBuffer: async () => buf }, buf, { name, meshExt: ext });
           restoreStateAfterLoad();
           refreshCharacterTabs();
-          populateBones();
           return;
         }
 
-        applyActiveCharacter(null);
+        applyActiveSceneSelection(null);
         refreshCharacterTabs();
         setStatus("Empty scene ready.");
       } finally {
@@ -5388,15 +7989,92 @@ app.registerExtension({
           ? String(inputData.value)
           : "";
         const stateRef = { value: initialValue };
+        const previewTabs = [
+          { key: "preview", label: "OpenPose" },
+          { key: "depth", label: "Depth" },
+          { key: "edges", label: "Edges" },
+        ];
+        let activePreviewTab = "preview";
+        const WIDGET_HEIGHT = 252;
         const container = document.createElement("div");
         container.className = "ess-pose-widget";
 
+        const topRow = document.createElement("div");
+        topRow.className = "ess-pose-widget-top";
+        const meta = document.createElement("div");
+        meta.className = "ess-pose-widget-meta";
         const button = document.createElement("button");
         button.textContent = "Open Pose Mesh Editor";
         const label = document.createElement("span");
+        label.className = "ess-pose-widget-status";
         label.textContent = stateRef.value ? "Pose loaded" : "No pose yet";
+        meta.append(button, label);
+        topRow.append(meta);
 
-        container.append(button, label);
+        const previewWrap = document.createElement("div");
+        previewWrap.className = "ess-pose-node-preview";
+        const previewHead = document.createElement("div");
+        previewHead.className = "ess-pose-node-preview-head";
+        const previewTitle = document.createElement("div");
+        previewTitle.className = "ess-pose-node-preview-title";
+        previewTitle.textContent = "Generated Images";
+        const previewTabRow = document.createElement("div");
+        previewTabRow.className = "ess-pose-node-preview-tabs";
+        const previewFrame = document.createElement("div");
+        previewFrame.className = "ess-pose-node-preview-frame";
+        const previewImage = document.createElement("img");
+        previewImage.alt = "Pose Mesh Editor preview";
+        const previewEmpty = document.createElement("div");
+        previewEmpty.className = "ess-pose-node-preview-empty";
+        previewEmpty.textContent = "No preview captured yet. Open the editor and save the scene to populate OpenPose, depth, and edges.";
+        previewFrame.append(previewImage, previewEmpty);
+        previewHead.append(previewTitle, previewTabRow);
+        previewWrap.append(previewHead, previewFrame);
+        container.append(topRow, previewWrap);
+
+        const tabButtons = new Map();
+        const setActivePreviewTab = (tabKey, sources) => {
+          const available = previewTabs.filter((tab) => sources[tab.key]);
+          const resolvedKey = sources[tabKey]
+            ? tabKey
+            : (available[0]?.key || previewTabs[0].key);
+          activePreviewTab = resolvedKey;
+          tabButtons.forEach((tabButton, key) => {
+            tabButton.classList.toggle("active", key === resolvedKey);
+            tabButton.disabled = !sources[key];
+          });
+          const selectedSrc = sources[resolvedKey];
+          if (selectedSrc) {
+            previewImage.src = selectedSrc;
+            previewImage.style.display = "block";
+            previewEmpty.style.display = "none";
+            const selectedLabel = previewTabs.find((tab) => tab.key === resolvedKey)?.label || resolvedKey;
+            previewTitle.textContent = `Generated Images: ${selectedLabel}`;
+          } else {
+            previewImage.removeAttribute("src");
+            previewImage.style.display = "none";
+            previewEmpty.style.display = "block";
+            previewTitle.textContent = "Generated Images";
+          }
+        };
+        previewTabs.forEach((tab) => {
+          const tabButton = document.createElement("button");
+          tabButton.type = "button";
+          tabButton.textContent = tab.label;
+          tabButton.addEventListener("click", () => {
+            const sources = extractPoseMeshEditorPreviews(stateRef.value);
+            setActivePreviewTab(tab.key, sources);
+          });
+          previewTabRow.appendChild(tabButton);
+          tabButtons.set(tab.key, tabButton);
+        });
+
+        const applyWidgetValue = (val) => {
+          const next = typeof val === "string" ? val : String(val ?? "");
+          stateRef.value = next;
+          label.textContent = next ? "Pose loaded" : "No pose yet";
+          setActivePreviewTab(activePreviewTab, extractPoseMeshEditorPreviews(next));
+        };
 
         const widget = node.addDOMWidget(inputName, "pose_mesh_editor", container, {
           getValue: () => stateRef.value,
@@ -5404,25 +8082,36 @@ app.registerExtension({
             const next = val ?? "";
             const hasWidgetValues = Array.isArray(node?.widgets_values) && node.widgets_values.length > 0;
             if (!hasWidgetValues && schemaDefault && next === schemaDefault) {
-              stateRef.value = "";
-              label.textContent = "No pose yet";
+              applyWidgetValue("");
               return;
             }
-            stateRef.value = next;
-            label.textContent = next ? "Pose loaded" : "No pose yet";
+            applyWidgetValue(next);
           },
-          getMinHeight: () => 36,
-          getMaxHeight: () => 36,
+          getMinHeight: () => WIDGET_HEIGHT,
+          getMaxHeight: () => WIDGET_HEIGHT,
           hideOnZoom: false,
           margin: 6,
         });
+        widget.callback = applyWidgetValue;
         widget.value = stateRef.value;
+        applyWidgetValue(stateRef.value);
+
+        requestAnimationFrame(() => {
+          if (typeof node?.computeSize !== "function" || typeof node?.setSize !== "function") return;
+          const computed = node.computeSize();
+          if (!Array.isArray(computed) || computed.length < 2) return;
+          const currentSize = Array.isArray(node.size) ? node.size : computed;
+          node.setSize([
+            Math.max(Number(currentSize[0] || 0), Number(computed[0] || 0), 320),
+            Math.max(Number(currentSize[1] || 0), Number(computed[1] || 0), 300),
+          ]);
+        });
 
         button.addEventListener("click", () => buildOverlay(node, widget, stateRef));
 
         return {
           widget,
-          minHeight: 36,
+          minHeight: WIDGET_HEIGHT,
         };
       },
     };

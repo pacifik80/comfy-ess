@@ -72,41 +72,28 @@ class PoseMeshEditor:
                         "placeholder": "Use the Pose Mesh Editor UI to build a pose.",
                     },
                 ),
-                "output_image": (
-                    "BOOLEAN",
-                    {
-                        "default": True,
-                        "label_on": "image",
-                        "label_off": "none",
-                        "tooltip": "When enabled, decode the preview PNG from the editor into an IMAGE output.",
-                    },
-                ),
             },
         }
 
     def render(
         self,
         state: str,
-        output_image: bool,
+        draw_fingers: bool = False,
+        draw_face_mask: bool = False,
+        **_legacy_kwargs: Any,
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         try:
             parsed: Dict[str, Any] = json.loads(state) if state else {}
         except Exception as exc:
             raise ValueError(f"Pose Mesh Editor received invalid JSON: {exc}") from exc
 
-        if output_image:
-            preview_png = str(parsed.get("preview_png", "") or "")
-            if not preview_png:
-                legacy_previews = parsed.get("preview_pngs", None)
-                if isinstance(legacy_previews, list) and legacy_previews:
-                    preview_png = str(legacy_previews[0] or "")
-            image_1 = _decode_preview(preview_png)
-            image_2 = _decode_preview(str(parsed.get("depth_png", "") or ""))
-            image_3 = _decode_preview(str(parsed.get("edges_png", "") or ""))
-        else:
-            tiny = torch.zeros((1, 1, 1, 3), dtype=torch.float32)
-            image_1 = tiny
-            image_2 = tiny
-            image_3 = tiny
+        preview_png = str(parsed.get("preview_png", "") or "")
+        if not preview_png:
+            legacy_previews = parsed.get("preview_pngs", None)
+            if isinstance(legacy_previews, list) and legacy_previews:
+                preview_png = str(legacy_previews[0] or "")
+        image_1 = _decode_preview(preview_png)
+        image_2 = _decode_preview(str(parsed.get("depth_png", "") or ""))
+        image_3 = _decode_preview(str(parsed.get("edges_png", "") or ""))
 
         return (image_1, image_2, image_3)

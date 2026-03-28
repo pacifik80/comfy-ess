@@ -727,15 +727,15 @@ def _infer_gender_from_body(metrics: dict[str, float]) -> str:
 
 
 def _suggest_mesh(gender: str, stage: str) -> str:
-    if gender == "male":
-        return "adult_male.fbx"
-    if stage == "baby":
-        return "baby_female.fbx"
-    if stage == "child":
-        return "child_female.fbx"
+    if stage in {"baby", "child"}:
+        return "MQ chil male.fbx"
     if stage == "teen":
-        return "teen_female.fbx"
-    return "adult_female.fbx"
+        if gender == "male":
+            return "MQ chil male.fbx"
+        return "MQ teen female.fbx"
+    if gender == "male":
+        return "MQ adult male.fbx"
+    return "MQ adult female.fbx"
 
 
 def _match_face_to_person(person_bbox: list[float] | None, faces: list[dict[str, Any]]):

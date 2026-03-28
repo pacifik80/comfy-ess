@@ -22,6 +22,8 @@ PersonCropToSize = None
 _person_crop_error = None
 CompositionCrop = None
 _composition_crop_error = None
+ImageBatchMerge = None
+_image_batch_merge_error = None
 
 try:
     from .nodes.prompt_builder.replacements_dictionary import ReplaceDict
@@ -51,6 +53,10 @@ try:
         from .nodes.image.composition_crop import CompositionCrop
     except Exception as exc:
         _composition_crop_error = exc
+    try:
+        from .nodes.image.image_batch_merge import ImageBatchMerge
+    except Exception as exc:
+        _image_batch_merge_error = exc
 except ImportError as exc:
     if "attempted relative import" not in str(exc):
         raise
@@ -105,6 +111,10 @@ except ImportError as exc:
         CompositionCrop = _import_node_attr("image.composition_crop", "CompositionCrop")
     except Exception as exc:
         _composition_crop_error = exc
+    try:
+        ImageBatchMerge = _import_node_attr("image.image_batch_merge", "ImageBatchMerge")
+    except Exception as exc:
+        _image_batch_merge_error = exc
 
 
 _NODE_PREFIX = "ESS/"
@@ -178,6 +188,12 @@ if CompositionCrop is not None:
 elif _composition_crop_error:
     print(f"[comfyui-ess] CompositionCrop node disabled: {_composition_crop_error}", file=sys.stderr)
 
+if ImageBatchMerge is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}ImageBatchMerge"] = ImageBatchMerge
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}ImageBatchMerge"] = "ESS - Image Batch Merge"
+if ImageBatchMerge is None and _image_batch_merge_error:
+    print(f"[comfyui-ess] ImageBatchMerge node disabled: {_image_batch_merge_error}", file=sys.stderr)
+
 # Define categories
 # Processing: ColorField
 # Image Processing: ImageAdjustments
@@ -197,7 +213,7 @@ __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]
 
 
 def _get_rigged_meshes_dir() -> Path:
-    return Path(__file__).resolve().parent / "meshes" / "human_rig"
+    return Path(__file__).resolve().parent / "meshes" / "fbx"
 
 
 def _list_rigged_meshes() -> list[str]:
@@ -548,9 +564,15 @@ def _estimate_pose_from_image_b64(image_b64: str, conf_threshold: float = 0.20):
         return "adult"
 
     def suggest_mesh(gender: str, stage: str):
+        if stage in {"baby", "child"}:
+            return "MQ chil male.fbx"
+        if stage == "teen":
+            if gender == "male":
+                return "MQ chil male.fbx"
+            return "MQ teen female.fbx"
         if gender == "male":
-            return "male_young.fbx"
-        return "female_young.fbx"
+            return "MQ adult male.fbx"
+        return "MQ adult female.fbx"
 
     persons = []
     for inst_idx, inst in enumerate(instances):
@@ -626,7 +648,7 @@ def _estimate_pose_from_image_b64(image_b64: str, conf_threshold: float = 0.20):
         "gender": primary.get("gender", "unknown"),
         "age": primary.get("age"),
         "life_stage": primary.get("life_stage", "adult"),
-        "mesh_suggestion": primary.get("mesh_suggestion", "female_young.fbx"),
+        "mesh_suggestion": primary.get("mesh_suggestion", "MQ adult female.fbx"),
         # New multi-person payload
         "persons": persons,
         "person_count": len(persons),

@@ -150,6 +150,23 @@ function applyContainerVars(container, minHeight, maxHeight) {
   container.style.setProperty("--comfy-widget-max-height", `${safeMax}`);
 }
 
+function collapseStorageWidget(widget) {
+  if (!widget) return;
+  widget.serialize = true;
+  widget.computeSize = () => [0, 0];
+  widget.draw = () => {};
+  const element = widget.element || widget.inputEl;
+  if (element && element.style) {
+    element.style.display = "none";
+    element.style.height = "0px";
+    element.style.minHeight = "0px";
+    element.style.margin = "0";
+    element.style.padding = "0";
+    element.style.border = "0";
+    element.style.overflow = "hidden";
+  }
+}
+
 function sameSet(a, b) {
   if (a === b) return true;
   if (!a || !b) return false;
@@ -457,60 +474,137 @@ function createEditorElements(node, config, inputData) {
   return { container, textarea, scheduleRender, onWheelCapture, cleanup };
 }
 
+function getTemplateEditorWidgets(node) {
+  if (!Array.isArray(node?.widgets)) return [];
+  return node.widgets.filter((widget) => {
+    if (!widget) return false;
+    if (widget.__essTemplateEditorConfig) return true;
+    return Boolean(widget.options?.ess_template_editor);
+  });
+}
+
+function syncStorageWidgetValue(node, widget, value) {
+  const nextValue = String(value ?? "");
+  widget.value = nextValue;
+  const idx = Array.isArray(node?.widgets) ? node.widgets.indexOf(widget) : -1;
+  if (idx >= 0 && Array.isArray(node.widgets_values)) {
+    node.widgets_values[idx] = nextValue;
+  }
+  app.graph?.setDirtyCanvas?.(true, true);
+}
+
+function ensureTemplateEditorWidgets(node) {
+  if (!node || typeof node.addDOMWidget !== "function") return;
+
+  const storageWidgets = getTemplateEditorWidgets(node);
+  for (const storageWidget of storageWidgets) {
+    collapseStorageWidget(storageWidget);
+
+    if (storageWidget.__essTemplateEditorSyncFromStorage) {
+      storageWidget.__essTemplateEditorSyncFromStorage();
+      continue;
+    }
+
+    const config = storageWidget.__essTemplateEditorConfig || storageWidget.options || {};
+    const minHeight = Number(config.minHeight) || Number(config.height) || MIN_EDITOR_HEIGHT;
+    const rawMaxHeight = Number(config.maxHeight);
+    const maxHeight = Number.isFinite(rawMaxHeight) ? Math.max(minHeight, rawMaxHeight) : 100000;
+
+    const { container, textarea, scheduleRender, onWheelCapture, cleanup } = createEditorElements(
+      node,
+      config,
+      { value: storageWidget.value ?? config.value ?? config.default ?? "" },
+    );
+    applyContainerVars(container, minHeight, maxHeight);
+
+    const syncFromStorage = () => {
+      const current = String(storageWidget.value ?? "");
+      if (textarea.value !== current) {
+        textarea.value = current;
+      }
+      scheduleRender();
+    };
+
+    textarea.addEventListener("input", () => {
+      syncStorageWidgetValue(node, storageWidget, textarea.value);
+    });
+
+    const domWidget = node.addDOMWidget(storageWidget.name, "ess_template_editor", container, {
+      getValue: () => String(storageWidget.value ?? textarea.value ?? ""),
+      setValue: (value) => {
+        syncStorageWidgetValue(node, storageWidget, value);
+        syncFromStorage();
+      },
+      getMinHeight: () => minHeight,
+      getMaxHeight: () => maxHeight,
+      hideOnZoom: false,
+      margin: 16,
+    });
+
+    storageWidget.__essTemplateEditorSyncFromStorage = syncFromStorage;
+    storageWidget.__essTemplateEditorDomWidget = domWidget;
+
+    const originalRemove = domWidget.onRemove?.bind(domWidget);
+    domWidget.onRemove = function () {
+      originalRemove?.();
+      window.removeEventListener("wheel", onWheelCapture, { capture: true });
+      cleanup?.();
+      storageWidget.__essTemplateEditorSyncFromStorage = null;
+      storageWidget.__essTemplateEditorDomWidget = null;
+      if (container.isConnected) {
+        container.remove();
+      }
+    };
+
+    syncFromStorage();
+  }
+}
+
 app.registerExtension({
   name: "ess_template_editor",
   async getCustomWidgets() {
     return {
       ESS_TEMPLATE_EDITOR(node, inputName, inputData) {
-        ensureStyles();
-
         const config = Array.isArray(inputData) ? (inputData[1] || {}) : (inputData || {});
-        const minHeight = Number(config.minHeight) || Number(config.height) || MIN_EDITOR_HEIGHT;
-        const rawMaxHeight = Number(config.maxHeight);
-        const maxHeight = Number.isFinite(rawMaxHeight) ? Math.max(minHeight, rawMaxHeight) : 100000;
-
-        const { container, textarea, scheduleRender, onWheelCapture, cleanup } = createEditorElements(node, config, inputData);
-        applyContainerVars(container, minHeight, maxHeight);
-
-        if (typeof node.addDOMWidget === "function") {
-          const widget = node.addDOMWidget(inputName, "ess_template_editor", container, {
-            getValue: () => textarea.value,
-            setValue: (value) => {
-              textarea.value = value ?? "";
-              scheduleRender();
-            },
-            getMinHeight: () => minHeight,
-            getMaxHeight: () => maxHeight,
-            hideOnZoom: false,
-            margin: 16,
-          });
-
-          const originalRemove = widget.onRemove?.bind(widget);
-          widget.onRemove = function () {
-            originalRemove?.();
-            window.removeEventListener("wheel", onWheelCapture, { capture: true });
-            cleanup?.();
-            if (container.isConnected) {
-              container.remove();
-            }
-          };
-
-          return {
-            widget,
-            minHeight: minHeight,
-          };
-        }
-
-        const fallback = node.addWidget("text", inputName, textarea.value ?? "", (value) => {
-          textarea.value = value ?? "";
-          scheduleRender();
-        }, { multiline: true });
-
-        return {
-          widget: fallback,
-          minHeight: minHeight,
-        };
+        const initialValue = (!Array.isArray(inputData) && inputData && inputData.value != null)
+          ? String(inputData.value ?? "")
+          : String(config.value ?? config.default ?? "");
+        const storage = node.addWidget("text", inputName, initialValue, () => {}, {
+          multiline: true,
+          placeholder: config.placeholder,
+          minHeight: config.minHeight,
+          maxHeight: config.maxHeight,
+          height: config.height,
+          ess_template_editor: true,
+        });
+        storage.value = initialValue;
+        storage.__essTemplateEditorConfig = { ...config };
+        return { widget: storage, minHeight: 0 };
       },
+    };
+  },
+  async beforeRegisterNodeDef(nodeType) {
+    const onNodeCreated = nodeType.prototype.onNodeCreated;
+    nodeType.prototype.onNodeCreated = function () {
+      const result = onNodeCreated ? onNodeCreated.apply(this, arguments) : undefined;
+      try {
+        ensureStyles();
+        ensureTemplateEditorWidgets(this);
+      } catch (error) {
+        console.error("[ess_template_editor] onNodeCreated failed:", error);
+      }
+      return result;
+    };
+
+    const onConfigure = nodeType.prototype.onConfigure;
+    nodeType.prototype.onConfigure = function () {
+      const result = onConfigure ? onConfigure.apply(this, arguments) : undefined;
+      try {
+        ensureTemplateEditorWidgets(this);
+      } catch (error) {
+        console.error("[ess_template_editor] onConfigure failed:", error);
+      }
+      return result;
     };
   },
 });
