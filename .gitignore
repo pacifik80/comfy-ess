@@ -3,7 +3,9 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# Local models
+# Local models / vendored external repos / caches (multi-GB, keep out of VCS)
+models/
+.cache_src/
 models/inswapper_128.onnx
 
 # OS

@@ -22,6 +22,7 @@ All nodes appear under `ESS/*` categories in the ComfyUI add menu.
 - `ESS - Image Adjustments`: per-channel RGB, brightness, and saturation adjustments on `IMAGE`.
 - `ESS - Segmentation Detailer`: segmentation-guided detail pass using a mask or SAM model; outputs `IMAGE` and `LATENT`.
 - `ESS - Person Crop To Size`: detects a person/head with Ultralytics YOLO and crops to the target size; outputs a debug overlay.
+- `ESS - Image Library Provider`: stores one or more images directly inside the workflow, outputs the chosen `IMAGE`, its width/height, and an optional per-image prompt; supports manual selection or weighted random mode.
 
 **Detailer**
 - `ESS - Face Detailer (ESS)`: Impact Pack face detailer clone; detects a face and refines via masked inpainting.

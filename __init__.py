@@ -22,8 +22,24 @@ PersonCropToSize = None
 _person_crop_error = None
 CompositionCrop = None
 _composition_crop_error = None
+CompositionCropV2 = None
+_composition_crop_v2_error = None
+Recrop = None
+_recrop_error = None
 ImageBatchMerge = None
 _image_batch_merge_error = None
+ESSImageLibraryProvider = None
+_image_library_provider_error = None
+ESSCheckpointBrowserLoader = None
+_checkpoint_browser_loader_error = None
+register_workflow_asset_routes = None
+_workflow_asset_routes_error = None
+ESSFluxSampler = None
+_ess_flux_sampler_error = None
+ESSFluxReferenceImages = None
+_ess_flux_reference_images_error = None
+ESSFluxInpaint = None
+_ess_flux_inpaint_error = None
 
 try:
     from .nodes.prompt_builder.replacements_dictionary import ReplaceDict
@@ -54,9 +70,52 @@ try:
     except Exception as exc:
         _composition_crop_error = exc
     try:
+        from .nodes.image.composition_crop_v2 import CompositionCropV2
+    except Exception as exc:
+        _composition_crop_v2_error = exc
+        CompositionCropV2 = None
+    else:
+        _composition_crop_v2_error = None
+    try:
+        from .nodes.image.recrop import Recrop
+    except Exception as exc:
+        _recrop_error = exc
+        Recrop = None
+    else:
+        _recrop_error = None
+    try:
         from .nodes.image.image_batch_merge import ImageBatchMerge
     except Exception as exc:
         _image_batch_merge_error = exc
+    try:
+        from .nodes.image.image_library_provider import ESSImageLibraryProvider
+    except Exception as exc:
+        _image_library_provider_error = exc
+    try:
+        from .nodes.checkpoints import ESSCheckpointBrowserLoader, register_checkpoint_routes
+    except Exception as exc:
+        _checkpoint_browser_loader_error = exc
+        register_checkpoint_routes = None
+    try:
+        from .nodes.assets.workflow_asset_store import register_workflow_asset_routes
+    except Exception as exc:
+        _workflow_asset_routes_error = exc
+        register_workflow_asset_routes = None
+    try:
+        from .nodes.sampling.ess_flux_sampler import ESSFluxSampler
+    except Exception as exc:
+        _ess_flux_sampler_error = exc
+        ESSFluxSampler = None
+    try:
+        from .nodes.conditioning.flux_reference_images import ESSFluxReferenceImages
+    except Exception as exc:
+        _ess_flux_reference_images_error = exc
+        ESSFluxReferenceImages = None
+    try:
+        from .nodes.conditioning.flux_inpaint import ESSFluxInpaint
+    except Exception as exc:
+        _ess_flux_inpaint_error = exc
+        ESSFluxInpaint = None
 except ImportError as exc:
     if "attempted relative import" not in str(exc):
         raise
@@ -112,9 +171,53 @@ except ImportError as exc:
     except Exception as exc:
         _composition_crop_error = exc
     try:
+        CompositionCropV2 = _import_node_attr("image.composition_crop_v2", "CompositionCropV2")
+    except Exception as exc:
+        _composition_crop_v2_error = exc
+        CompositionCropV2 = None
+    else:
+        _composition_crop_v2_error = None
+    try:
+        Recrop = _import_node_attr("image.recrop", "Recrop")
+    except Exception as exc:
+        _recrop_error = exc
+        Recrop = None
+    else:
+        _recrop_error = None
+    try:
         ImageBatchMerge = _import_node_attr("image.image_batch_merge", "ImageBatchMerge")
     except Exception as exc:
         _image_batch_merge_error = exc
+    try:
+        ESSImageLibraryProvider = _import_node_attr("image.image_library_provider", "ESSImageLibraryProvider")
+    except Exception as exc:
+        _image_library_provider_error = exc
+    try:
+        ESSCheckpointBrowserLoader = _import_node_attr("checkpoints", "ESSCheckpointBrowserLoader")
+        register_checkpoint_routes = _import_node_attr("checkpoints", "register_checkpoint_routes")
+    except Exception as exc:
+        _checkpoint_browser_loader_error = exc
+        register_checkpoint_routes = None
+    try:
+        register_workflow_asset_routes = _import_node_attr("assets.workflow_asset_store", "register_workflow_asset_routes")
+    except Exception as exc:
+        _workflow_asset_routes_error = exc
+        register_workflow_asset_routes = None
+    try:
+        ESSFluxSampler = _import_node_attr("sampling.ess_flux_sampler", "ESSFluxSampler")
+    except Exception as exc:
+        _ess_flux_sampler_error = exc
+        ESSFluxSampler = None
+    try:
+        ESSFluxReferenceImages = _import_node_attr("conditioning.flux_reference_images", "ESSFluxReferenceImages")
+    except Exception as exc:
+        _ess_flux_reference_images_error = exc
+        ESSFluxReferenceImages = None
+    try:
+        ESSFluxInpaint = _import_node_attr("conditioning.flux_inpaint", "ESSFluxInpaint")
+    except Exception as exc:
+        _ess_flux_inpaint_error = exc
+        ESSFluxInpaint = None
 
 
 _NODE_PREFIX = "ESS/"
@@ -188,11 +291,53 @@ if CompositionCrop is not None:
 elif _composition_crop_error:
     print(f"[comfyui-ess] CompositionCrop node disabled: {_composition_crop_error}", file=sys.stderr)
 
+if CompositionCropV2 is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}CompositionCropV2"] = CompositionCropV2
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}CompositionCropV2"] = "ESS - Composition Crop V2"
+elif _composition_crop_v2_error:
+    print(f"[comfyui-ess] CompositionCropV2 node disabled: {_composition_crop_v2_error}", file=sys.stderr)
+
+if Recrop is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}Recrop"] = Recrop
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}Recrop"] = "ESS - Recrop"
+elif _recrop_error:
+    print(f"[comfyui-ess] Recrop node disabled: {_recrop_error}", file=sys.stderr)
+
 if ImageBatchMerge is not None:
     NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}ImageBatchMerge"] = ImageBatchMerge
     NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}ImageBatchMerge"] = "ESS - Image Batch Merge"
 if ImageBatchMerge is None and _image_batch_merge_error:
     print(f"[comfyui-ess] ImageBatchMerge node disabled: {_image_batch_merge_error}", file=sys.stderr)
+
+if ESSImageLibraryProvider is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}ImageLibraryProvider"] = ESSImageLibraryProvider
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}ImageLibraryProvider"] = "ESS - Image Library Provider"
+elif _image_library_provider_error:
+    print(f"[comfyui-ess] ImageLibraryProvider node disabled: {_image_library_provider_error}", file=sys.stderr)
+
+if ESSCheckpointBrowserLoader is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}CheckpointBrowserLoader"] = ESSCheckpointBrowserLoader
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}CheckpointBrowserLoader"] = "ESS - Checkpoint Browser Loader"
+elif _checkpoint_browser_loader_error:
+    print(f"[comfyui-ess] CheckpointBrowserLoader node disabled: {_checkpoint_browser_loader_error}", file=sys.stderr)
+
+if ESSFluxSampler is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}FluxSampler"] = ESSFluxSampler
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}FluxSampler"] = "ESS - Flux Sampler"
+elif _ess_flux_sampler_error:
+    print(f"[comfyui-ess] FluxSampler node disabled: {_ess_flux_sampler_error}", file=sys.stderr)
+
+if ESSFluxReferenceImages is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}FluxReferenceImages"] = ESSFluxReferenceImages
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}FluxReferenceImages"] = "ESS - Flux Reference Images"
+elif _ess_flux_reference_images_error:
+    print(f"[comfyui-ess] FluxReferenceImages node disabled: {_ess_flux_reference_images_error}", file=sys.stderr)
+
+if ESSFluxInpaint is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}FluxInpaint"] = ESSFluxInpaint
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}FluxInpaint"] = "ESS - Flux Inpaint"
+elif _ess_flux_inpaint_error:
+    print(f"[comfyui-ess] FluxInpaint node disabled: {_ess_flux_inpaint_error}", file=sys.stderr)
 
 # Define categories
 # Processing: ColorField
@@ -888,5 +1033,15 @@ if web is not None:
                     "error": "",
                 })
             return web.json_response({"ok": True, **state})
+
+        if register_checkpoint_routes is not None:
+            register_checkpoint_routes(PromptServer, web)
+        if register_workflow_asset_routes is not None:
+            register_workflow_asset_routes(PromptServer, web)
+        try:
+            from .nodes.image.recrop import register_recrop_routes
+            register_recrop_routes(PromptServer, web)
+        except Exception as exc:  # pragma: no cover
+            print(f"[comfyui-ess] Recrop routes unavailable: {exc}", file=sys.stderr)
     except Exception as exc:  # pragma: no cover - route registration is optional
         print(f"[comfyui-ess] Mesh routes unavailable: {exc}", file=sys.stderr)
