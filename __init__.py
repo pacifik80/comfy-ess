@@ -18,12 +18,6 @@ FaceSwapInSwapperNode = None
 FaceSwapSimSwapNode = None
 FaceSwapFaceFusionNode = None
 _face_swapper_error = None
-PersonCropToSize = None
-_person_crop_error = None
-CompositionCrop = None
-_composition_crop_error = None
-CompositionCropV2 = None
-_composition_crop_v2_error = None
 Recrop = None
 _recrop_error = None
 ImageBatchMerge = None
@@ -40,6 +34,8 @@ ESSFluxReferenceImages = None
 _ess_flux_reference_images_error = None
 ESSFluxInpaint = None
 _ess_flux_inpaint_error = None
+ESSFluxFill = None
+_ess_flux_fill_error = None
 
 try:
     from .nodes.prompt_builder.replacements_dictionary import ReplaceDict
@@ -61,21 +57,6 @@ try:
     from .nodes.prompt_builder.prompt_template_editor_multi import PromptTemplateEditorMulti
     from .nodes.prompt_builder.prompt_conditioning_builder import PromptConditioningBuilder
     from .nodes.prompt_builder.scene_flow_editor import SceneFlowEditor
-    try:
-        from .nodes.image.person_crop_to_size import PersonCropToSize
-    except Exception as exc:
-        _person_crop_error = exc
-    try:
-        from .nodes.image.composition_crop import CompositionCrop
-    except Exception as exc:
-        _composition_crop_error = exc
-    try:
-        from .nodes.image.composition_crop_v2 import CompositionCropV2
-    except Exception as exc:
-        _composition_crop_v2_error = exc
-        CompositionCropV2 = None
-    else:
-        _composition_crop_v2_error = None
     try:
         from .nodes.image.recrop import Recrop
     except Exception as exc:
@@ -116,6 +97,11 @@ try:
     except Exception as exc:
         _ess_flux_inpaint_error = exc
         ESSFluxInpaint = None
+    try:
+        from .nodes.conditioning.flux_fill import ESSFluxFill
+    except Exception as exc:
+        _ess_flux_fill_error = exc
+        ESSFluxFill = None
 except ImportError as exc:
     if "attempted relative import" not in str(exc):
         raise
@@ -163,21 +149,6 @@ except ImportError as exc:
     PromptConditioningBuilder = _import_node_attr("prompt_builder.prompt_conditioning_builder", "PromptConditioningBuilder")
     SceneFlowEditor = _import_node_attr("prompt_builder.scene_flow_editor", "SceneFlowEditor")
     try:
-        PersonCropToSize = _import_node_attr("image.person_crop_to_size", "PersonCropToSize")
-    except Exception as exc:
-        _person_crop_error = exc
-    try:
-        CompositionCrop = _import_node_attr("image.composition_crop", "CompositionCrop")
-    except Exception as exc:
-        _composition_crop_error = exc
-    try:
-        CompositionCropV2 = _import_node_attr("image.composition_crop_v2", "CompositionCropV2")
-    except Exception as exc:
-        _composition_crop_v2_error = exc
-        CompositionCropV2 = None
-    else:
-        _composition_crop_v2_error = None
-    try:
         Recrop = _import_node_attr("image.recrop", "Recrop")
     except Exception as exc:
         _recrop_error = exc
@@ -218,6 +189,11 @@ except ImportError as exc:
     except Exception as exc:
         _ess_flux_inpaint_error = exc
         ESSFluxInpaint = None
+    try:
+        ESSFluxFill = _import_node_attr("conditioning.flux_fill", "ESSFluxFill")
+    except Exception as exc:
+        _ess_flux_fill_error = exc
+        ESSFluxFill = None
 
 
 _NODE_PREFIX = "ESS/"
@@ -279,24 +255,6 @@ if FaceSwapFaceFusionNode is not None:
 elif _face_swapper_error:
     print(f"[comfyui-ess] FaceSwap node disabled: {_face_swapper_error}", file=sys.stderr)
 
-if PersonCropToSize is not None:
-    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}PersonCropToSize"] = PersonCropToSize
-    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}PersonCropToSize"] = "ESS - Person Crop To Size"
-elif _person_crop_error:
-    print(f"[comfyui-ess] PersonCropToSize node disabled: {_person_crop_error}", file=sys.stderr)
-
-if CompositionCrop is not None:
-    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}CompositionCrop"] = CompositionCrop
-    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}CompositionCrop"] = "ESS - Composition Crop"
-elif _composition_crop_error:
-    print(f"[comfyui-ess] CompositionCrop node disabled: {_composition_crop_error}", file=sys.stderr)
-
-if CompositionCropV2 is not None:
-    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}CompositionCropV2"] = CompositionCropV2
-    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}CompositionCropV2"] = "ESS - Composition Crop V2"
-elif _composition_crop_v2_error:
-    print(f"[comfyui-ess] CompositionCropV2 node disabled: {_composition_crop_v2_error}", file=sys.stderr)
-
 if Recrop is not None:
     NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}Recrop"] = Recrop
     NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}Recrop"] = "ESS - Recrop"
@@ -338,6 +296,12 @@ if ESSFluxInpaint is not None:
     NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}FluxInpaint"] = "ESS - Flux Inpaint"
 elif _ess_flux_inpaint_error:
     print(f"[comfyui-ess] FluxInpaint node disabled: {_ess_flux_inpaint_error}", file=sys.stderr)
+
+if ESSFluxFill is not None:
+    NODE_CLASS_MAPPINGS[f"{_NODE_PREFIX}FluxFill"] = ESSFluxFill
+    NODE_DISPLAY_NAME_MAPPINGS[f"{_NODE_PREFIX}FluxFill"] = "ESS - Flux Fill"
+elif _ess_flux_fill_error:
+    print(f"[comfyui-ess] FluxFill node disabled: {_ess_flux_fill_error}", file=sys.stderr)
 
 # Define categories
 # Processing: ColorField

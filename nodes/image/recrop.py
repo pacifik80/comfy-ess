@@ -14,13 +14,14 @@ _PREVIEW_COUNTER_LOCK = threading.Lock()
 import numpy as np
 import torch
 
-from .composition_crop import (
+from ._crop_common import (
     _box_area,
     _box_center,
     _box_from_center_and_size,
     _box_from_points,
     _clip_box,
     _coverage,
+    _crop_fill_mask,
     _expand_box,
     _expand_crop_to_aspect,
     _extract_pose_people,
@@ -35,8 +36,9 @@ from .composition_crop import (
     _tensor_to_uint8_image,
     _uint8_image_to_tensor,
     _union_boxes,
+    _load_model,
+    _resolve_device,
 )
-from .person_crop_to_size import _load_model, _resolve_device
 
 try:
     import cv2  # type: ignore
@@ -995,11 +997,93 @@ def _build_part_settings(kwargs: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     return settings
 
 
+def _zero_mask(height: int, width: int, device: Any) -> torch.Tensor:
+    """All-black MASK (nothing to repair), shaped [1, H, W] to match its IMAGE."""
+    return torch.zeros((1, int(height), int(width)), dtype=torch.float32, device=device)
+
+
+def _fill_mask_tensor(
+    crop_box: Tuple[int, int, int, int],
+    image_w: int,
+    image_h: int,
+    target_w: int,
+    target_h: int,
+    device: Any,
+    feather_px: int = 0,
+) -> torch.Tensor:
+    """MASK marking the synthetic fill region, aligned + resized to the output image.
+
+    The synthetic (out-of-image) region is ALWAYS solid 1.0 so a downstream model fully
+    regenerates it. ``feather_px`` only ramps the mask 1.0 -> 0.0 *inward* across that many
+    output pixels of real content, giving the model a blend overlap at the seam without
+    ever weakening coverage of the invented pixels.
+    """
+    hard = _crop_fill_mask(crop_box, image_w, image_h)
+    tw, th = int(target_w), int(target_h)
+
+    # Resize the hard mask to output size WITHOUT softening the seam (nearest, not linear).
+    if cv2 is not None:
+        hard_t = cv2.resize(hard, (tw, th), interpolation=cv2.INTER_NEAREST)
+    else:
+        import torch.nn.functional as F
+        hard_t = F.interpolate(torch.from_numpy(hard)[None, None], size=(th, tw), mode="nearest")[0, 0].numpy()
+    hard_t = hard_t.astype(np.float32)
+
+    feather_px = max(0, int(feather_px))
+    if feather_px > 0 and cv2 is not None and float(hard_t.max()) > 0.0:
+        # Distance (in output px) from each real pixel to the nearest synthetic pixel.
+        real = (hard_t < 0.5).astype(np.uint8)
+        dist = cv2.distanceTransform(real, cv2.DIST_L2, 3)
+        ramp = np.clip(1.0 - dist / float(feather_px), 0.0, 1.0).astype(np.float32)
+        # max(): inward ramp only; synthetic region stays fully 1.0.
+        mask = np.maximum(hard_t, ramp)
+    else:
+        mask = hard_t
+
+    arr = np.ascontiguousarray(mask, dtype=np.float32)
+    return torch.from_numpy(arr).clamp_(0.0, 1.0).unsqueeze(0).to(device)
+
+
+def _parse_manual_crop(value: Any) -> Optional[Tuple[int, int, int, int]]:
+    """Parse a manual crop box 'x0,y0,x1,y1' (image px; negatives / out-of-bounds allowed).
+    Returns None if empty or malformed."""
+    if not value:
+        return None
+    try:
+        parts = [int(round(float(v))) for v in str(value).replace(";", ",").split(",") if v.strip() != ""]
+    except Exception:
+        return None
+    if len(parts) != 4:
+        return None
+    x0, y0, x1, y1 = parts
+    if x1 <= x0 or y1 <= y0:
+        return None
+    return (x0, y0, x1, y1)
+
+
+def _compute_crop_box(selected, part_settings, framing_mode, width, height,
+                      image_w, image_h, crop_mode, manual_box):
+    """Resolve the crop box for the selected person: a verbatim manual box (out-of-bounds
+    allowed) in manual mode, else the auto solver + aspect reconcile. Returns (box, mode)."""
+    if crop_mode == "manual" and manual_box is not None:
+        return manual_box, "manual"
+    solver_zones = _select_zones_for_solver(selected.get("zones", []), part_settings, image_w, image_h)
+    full_zone = next((z for z in selected.get("zones", []) if z["name"] == "full"), None)
+    fallback_box = full_zone["box"] if full_zone else _clip_box(selected["bbox"], image_w, image_h) or (0, 0, image_w, image_h)
+    crop_box = _choose_crop_zones(solver_zones, fallback_box, int(width), int(height), image_w, image_h)
+    fm = str(framing_mode or "crop").strip().lower()
+    if fm == "expand":
+        crop_box = _expand_crop_to_aspect(crop_box, int(width), int(height))
+    else:
+        crop_box = _inscribe_crop_to_aspect(crop_box, int(width), int(height), image_w, image_h)
+    return crop_box, fm
+
+
 class Recrop:
     CATEGORY = "ESS/Image"
     FUNCTION = "recrop"
-    RETURN_TYPES = ("IMAGE", "IMAGE")
-    RETURN_NAMES = ("image", "debug_overlay")
+    RETURN_TYPES = ("IMAGE", "IMAGE", "MASK")
+    RETURN_NAMES = ("image", "debug_overlay", "fill_mask")
     OUTPUT_NODE = True
 
     @classmethod
@@ -1013,7 +1097,7 @@ class Recrop:
             "device": (("auto", "cuda", "cpu"), {"default": "auto"}),
             "confidence_threshold": ("FLOAT", {"default": 0.25, "min": 0.01, "max": 0.99, "step": 0.01}),
             "framing_mode": (("crop", "expand"), {"default": "crop"}),
-            "expand_fill_mode": (("border_fill", "fill_color"), {"default": "border_fill"}),
+            "expand_fill_mode": (("border_fill", "fill_color", "reflect", "inpaint"), {"default": "border_fill"}),
             "expand_fill_color": ("STRING", {"default": "#000000", "multiline": False}),
             "preferred_gender": (("any", "female", "male"), {"default": "any"}),
             "target_age_min": ("INT", {"default": 18, "min": 0, "max": 120, "step": 1}),
@@ -1028,6 +1112,11 @@ class Recrop:
                 optional[f"side_{key}"] = (_SIDE_VALUES, {"default": "both"})
             optional[f"weight_{key}"] = ("FLOAT", {"default": spec["default_weight"], "min": 0.0, "max": 100.0, "step": 1.0})
             optional[f"margin_{key}"] = ("FLOAT", {"default": spec["default_margin"], "min": 0.0, "max": 10.0, "step": 0.1})
+        # New inputs must be appended at the END so existing nodes' positional
+        # widgets_values stay aligned (inserting mid-list shifts every later widget).
+        optional["mask_feather"] = ("INT", {"default": 16, "min": 0, "max": 512, "step": 1})
+        optional["crop_mode"] = (("auto", "manual"), {"default": "auto"})
+        optional["manual_crop"] = ("STRING", {"default": "", "multiline": False})
         return {"required": required, "optional": optional, "hidden": {"node_id": "UNIQUE_ID"}}
 
     def recrop(
@@ -1040,6 +1129,7 @@ class Recrop:
         framing_mode: str = "crop",
         expand_fill_mode: str = "border_fill",
         expand_fill_color: str = "#000000",
+        mask_feather: int = 16,
         preferred_gender: str = "any",
         target_age_min: int = 18,
         target_age_max: int = 35,
@@ -1073,13 +1163,24 @@ class Recrop:
             zones_payload["device_choice"] = device_choice
             zones_payload["confidence_threshold"] = float(confidence_threshold)
             zones_payload["detect_only"] = True
+            # Compute the crop box now so the frame shows on Detect (same logic as a full run).
+            if people:
+                crop_mode = str(kwargs.get("crop_mode", "auto") or "auto").strip().lower()
+                manual_box = _parse_manual_crop(kwargs.get("manual_crop", ""))
+                crop_box, fm = _compute_crop_box(
+                    people[0], _build_part_settings(kwargs), framing_mode,
+                    width, height, image_w, image_h, crop_mode, manual_box,
+                )
+                zones_payload["crop_box"] = [int(crop_box[0]), int(crop_box[1]), int(crop_box[2]), int(crop_box[3])]
+                zones_payload["framing_mode"] = fm
             if preview_info is not None:
                 zones_payload["preview"] = preview_info
             ui_payload: Dict[str, Any] = {"zones": [json.dumps(zones_payload)]}
             passthrough = _uint8_image_to_tensor(image_uint8, image.device)
+            empty_mask = _zero_mask(image_h, image_w, image.device)
             return {
                 "ui": ui_payload,
-                "result": (passthrough, passthrough),
+                "result": (passthrough, passthrough, empty_mask),
             }
 
         if not people:
@@ -1091,7 +1192,7 @@ class Recrop:
             ui_payload = {"zones": [json.dumps(empty_payload)]}
             return {
                 "ui": ui_payload,
-                "result": (image, blank_overlay),
+                "result": (image, blank_overlay, _zero_mask(image_h, image_w, image.device)),
             }
 
         for person in people:
@@ -1103,17 +1204,14 @@ class Recrop:
         selected_idx = 0
 
         part_settings = _build_part_settings(kwargs)
-        solver_zones = _select_zones_for_solver(selected.get("zones", []), part_settings, image_w, image_h)
-
-        full_zone = next((z for z in selected.get("zones", []) if z["name"] == "full"), None)
-        fallback_box = full_zone["box"] if full_zone else _clip_box(selected["bbox"], image_w, image_h) or (0, 0, image_w, image_h)
-
-        crop_box = _choose_crop_zones(solver_zones, fallback_box, int(width), int(height), image_w, image_h)
-        framing_mode_norm = str(framing_mode or "crop").strip().lower()
-        if framing_mode_norm == "expand":
-            crop_box = _expand_crop_to_aspect(crop_box, int(width), int(height))
-        else:
-            crop_box = _inscribe_crop_to_aspect(crop_box, int(width), int(height), image_w, image_h)
+        crop_mode = str(kwargs.get("crop_mode", "auto") or "auto").strip().lower()
+        manual_box = _parse_manual_crop(kwargs.get("manual_crop", ""))
+        # Manual mode uses the user box verbatim (edges may sit outside the image; the fill
+        # modes synthesize those pixels). Auto runs the solver + aspect reconcile.
+        crop_box, framing_mode_norm = _compute_crop_box(
+            selected, part_settings, framing_mode, width, height,
+            image_w, image_h, crop_mode, manual_box,
+        )
 
         crop_image = _render_crop_region(
             image_uint8,
@@ -1139,9 +1237,11 @@ class Recrop:
 
         ui_payload: Dict[str, Any] = {"zones": [json.dumps(zones_payload)]}
 
+        fill_mask = _fill_mask_tensor(crop_box, image_w, image_h, int(width), int(height), image.device, mask_feather)
+
         return {
             "ui": ui_payload,
-            "result": (output_tensor, overlay_tensor),
+            "result": (output_tensor, overlay_tensor, fill_mask),
         }
 
 

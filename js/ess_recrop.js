@@ -331,11 +331,14 @@ function buildOptionsPanel(node, refs, onChange) {
   framingSelect.addEventListener("change", () => { setWidgetValue(node, refs.framing_mode, framingSelect.value || "crop"); onChange?.("B"); refresh(); });
 
   const fillModeSelect = document.createElement("select");
-  ["border_fill","fill_color"].forEach((v) => { const o = document.createElement("option"); o.value = v; o.textContent = v; fillModeSelect.appendChild(o); });
+  ["border_fill","fill_color","reflect","inpaint"].forEach((v) => { const o = document.createElement("option"); o.value = v; o.textContent = v; fillModeSelect.appendChild(o); });
   fillModeSelect.addEventListener("change", () => { setWidgetValue(node, refs.expand_fill_mode, fillModeSelect.value || "border_fill"); onChange?.("C"); refresh(); });
 
   const colorInput = document.createElement("input"); colorInput.type = "color";
   colorInput.addEventListener("input", () => { setWidgetValue(node, refs.expand_fill_color, colorInput.value || "#000000"); onChange?.("C"); });
+
+  const featherInput = document.createElement("input"); featherInput.type = "number"; featherInput.min = "0"; featherInput.max = "512"; featherInput.step = "1";
+  featherInput.addEventListener("input", () => { setWidgetValue(node, refs.mask_feather, Number(featherInput.value || 0)); onChange?.("C"); });
 
   const genderSelect = document.createElement("select");
   ["any","female","male"].forEach((v) => { const o = document.createElement("option"); o.value = v; o.textContent = v; genderSelect.appendChild(o); });
@@ -354,18 +357,19 @@ function buildOptionsPanel(node, refs, onChange) {
   deviceSelect.addEventListener("change", () => { setWidgetValue(node, refs.device, deviceSelect.value || "auto"); onChange?.("A"); });
 
   const rowFraming = makeRow([makeLabel("Framing"), framingSelect, makeLabel("Fill mode"), fillModeSelect]);
-  const rowColor = makeRow([makeLabel("Fill color"), colorInput, document.createElement("div"), document.createElement("div")]);
+  const rowColor = makeRow([makeLabel("Fill color"), colorInput, makeLabel("Mask feather"), featherInput]);
   const rowSubject = makeRow([makeLabel("Subject"), genderSelect, makeLabel("Age min"), ageMin]);
   const rowAge = makeRow([makeLabel("Age max"), ageMax, makeLabel("Conf"), confInput]);
   const rowDevice = makeRow([makeLabel("Device"), deviceSelect, document.createElement("div"), document.createElement("div")]);
   container.append(rowFraming, rowColor, rowSubject, rowAge, rowDevice);
 
-  [framingSelect, fillModeSelect, colorInput, genderSelect, ageMin, ageMax, confInput, deviceSelect].forEach(trapPointerEvents);
+  [framingSelect, fillModeSelect, colorInput, featherInput, genderSelect, ageMin, ageMax, confInput, deviceSelect].forEach(trapPointerEvents);
 
   function refresh() {
     framingSelect.value = String(refs.framing_mode?.value ?? "crop");
     fillModeSelect.value = String(refs.expand_fill_mode?.value ?? "border_fill");
     colorInput.value = String(refs.expand_fill_color?.value || "#000000");
+    featherInput.value = String(refs.mask_feather?.value ?? 16);
     genderSelect.value = String(refs.preferred_gender?.value ?? "any");
     ageMin.value = String(refs.target_age_min?.value ?? 18);
     ageMax.value = String(refs.target_age_max?.value ?? 35);
@@ -374,6 +378,7 @@ function buildOptionsPanel(node, refs, onChange) {
     const expand = framingSelect.value === "expand";
     fillModeSelect.disabled = !expand;
     colorInput.disabled = !(expand && fillModeSelect.value === "fill_color");
+    featherInput.disabled = !expand;
   }
   return { container, refresh };
 }
@@ -401,15 +406,16 @@ function makePreviewCanvas() {
   zoomBox.className = "ess-recrop-zoom";
   const zoomFit = document.createElement("button"); zoomFit.className = "ess-recrop-btn"; zoomFit.textContent = "Fit";
   const zoom100 = document.createElement("button"); zoom100.className = "ess-recrop-btn"; zoom100.textContent = "1:1";
-  zoomBox.append(zoomFit, zoom100);
+  const cropReset = document.createElement("button"); cropReset.className = "ess-recrop-btn"; cropReset.textContent = "Crop: Auto"; cropReset.title = "Reset crop to automatic placement";
+  zoomBox.append(zoomFit, zoom100, cropReset);
   wrap.appendChild(zoomBox);
 
   trapPointerEvents(wrap);
-  return { wrap, canvas, tooltip, zoomFit, zoom100 };
+  return { wrap, canvas, tooltip, zoomFit, zoom100, cropReset };
 }
 
 function setupPreview(state, previewParts) {
-  const { wrap, canvas, tooltip, zoomFit, zoom100 } = previewParts;
+  const { wrap, canvas, tooltip, zoomFit, zoom100, cropReset } = previewParts;
   const ctx = canvas.getContext("2d");
   state.preview = {
     image: null,
@@ -492,6 +498,62 @@ function setupPreview(state, previewParts) {
     return [(cx - state.preview.offsetX) / state.preview.scale, (cy - state.preview.offsetY) / state.preview.scale];
   }
 
+  // --- interactive crop frame ---------------------------------------------
+  const CROP_HANDLES = ["nw", "ne", "sw", "se"];
+  const CROP_OPP = { nw: "se", ne: "sw", sw: "ne", se: "nw" };
+
+  function parseBox(s) {
+    if (!s) return null;
+    const p = String(s).split(",").map(Number);
+    if (p.length !== 4 || p.some((n) => !isFinite(n))) return null;
+    if (p[2] <= p[0] || p[3] <= p[1]) return null;
+    return p.map((n) => Math.round(n));
+  }
+  function getActiveCrop() {
+    if (String(state.refs?.crop_mode?.value ?? "auto") === "manual") {
+      const b = parseBox(state.refs?.manual_crop?.value);
+      if (b) return b;
+    }
+    const c = state.zonesPayload?.crop_box;
+    return c ? c.slice() : null;
+  }
+  function targetAspect() {
+    const w = Number(state.widthWidget?.value) || 1;
+    const h = Number(state.heightWidget?.value) || 1;
+    return w / h;
+  }
+  function cornerPt(box, id) {
+    const [x0, y0, x1, y1] = box;
+    if (id === "nw") return [x0, y0];
+    if (id === "ne") return [x1, y0];
+    if (id === "sw") return [x0, y1];
+    return [x1, y1];
+  }
+  function cropHandleUnder(cx, cy, box) {
+    const tol = 9;
+    for (const id of CROP_HANDLES) {
+      const [hx, hy] = imgToCanvas(...cornerPt(box, id));
+      if (Math.abs(cx - hx) <= tol && Math.abs(cy - hy) <= tol) return id;
+    }
+    const [a0, b0] = imgToCanvas(box[0], box[1]);
+    const [a1, b1] = imgToCanvas(box[2], box[3]);
+    if (cx >= Math.min(a0, a1) && cx <= Math.max(a0, a1) && cy >= Math.min(b0, b1) && cy <= Math.max(b0, b1)) return "body";
+    return null;
+  }
+  function commitManualCrop(box) {
+    const node = state.node;
+    if (!node) return;
+    if (state.refs?.crop_mode) setWidgetValue(node, state.refs.crop_mode, "manual");
+    if (state.refs?.manual_crop) setWidgetValue(node, state.refs.manual_crop, box.map((n) => Math.round(n)).join(","));
+  }
+  function resetCropToAuto() {
+    const node = state.node;
+    if (!node) return;
+    if (state.refs?.crop_mode) setWidgetValue(node, state.refs.crop_mode, "auto");
+    if (state.refs?.manual_crop) setWidgetValue(node, state.refs.manual_crop, "");
+    draw();
+  }
+
   function draw() {
     const img = state.preview.image;
     ctx.clearRect(0, 0, state.preview.width, state.preview.height);
@@ -525,14 +587,21 @@ function setupPreview(state, previewParts) {
     });
     ctx.setLineDash([]);
 
-    const cropBox = state.zonesPayload?.crop_box;
+    const cropBox = getActiveCrop();
     if (cropBox) {
-      const [x0, y0, x1, y1] = cropBox;
-      const [cx0, cy0] = imgToCanvas(x0, y0);
-      const [cx1, cy1] = imgToCanvas(x1, y1);
-      ctx.strokeStyle = "rgba(255,0,0,0.95)";
+      const manual = String(state.refs?.crop_mode?.value ?? "auto") === "manual";
+      const [cx0, cy0] = imgToCanvas(cropBox[0], cropBox[1]);
+      const [cx1, cy1] = imgToCanvas(cropBox[2], cropBox[3]);
+      ctx.strokeStyle = manual ? "rgba(80,200,255,0.95)" : "rgba(255,0,0,0.95)";
       ctx.lineWidth = 2;
+      ctx.setLineDash(manual ? [] : [6, 4]);
       ctx.strokeRect(cx0, cy0, cx1 - cx0, cy1 - cy0);
+      ctx.setLineDash([]);
+      ctx.fillStyle = manual ? "rgba(80,200,255,0.95)" : "rgba(255,0,0,0.9)";
+      CROP_HANDLES.forEach((id) => {
+        const [hx, hy] = imgToCanvas(...cornerPt(cropBox, id));
+        ctx.fillRect(hx - 4, hy - 4, 8, 8);
+      });
     }
 
     if (state.highlightedZone) {
@@ -571,6 +640,30 @@ function setupPreview(state, previewParts) {
 
   wrap.addEventListener("pointermove", (e) => {
     const [cx, cy] = pointerToWrapCoords(e);
+    if (state.cropDrag) {
+      const [ix, iy] = canvasToImg(cx, cy);
+      const d = state.cropDrag;
+      let box;
+      if (d.handle === "body") {
+        const dx = ix - d.startImg[0];
+        const dy = iy - d.startImg[1];
+        box = [d.startBox[0] + dx, d.startBox[1] + dy, d.startBox[2] + dx, d.startBox[3] + dy];
+      } else {
+        const anchor = cornerPt(d.startBox, CROP_OPP[d.handle]);
+        const dragged = cornerPt(d.startBox, d.handle);
+        const dirX = Math.sign(dragged[0] - anchor[0]) || 1;
+        const dirY = Math.sign(dragged[1] - anchor[1]) || 1;
+        const aspect = targetAspect();
+        let w = Math.max(Math.abs(ix - anchor[0]), Math.abs(iy - anchor[1]) * aspect, 16);
+        const h = w / aspect;
+        const nx = anchor[0] + dirX * w;
+        const ny = anchor[1] + dirY * h;
+        box = [Math.min(anchor[0], nx), Math.min(anchor[1], ny), Math.max(anchor[0], nx), Math.max(anchor[1], ny)];
+      }
+      commitManualCrop(box.map((n) => Math.round(n)));
+      draw();
+      return;
+    }
     if (state.preview.panStart) {
       const dx = cx - state.preview.panStart.x;
       const dy = cy - state.preview.panStart.y;
@@ -615,13 +708,30 @@ function setupPreview(state, previewParts) {
       state.preview.panStart = { x: px, y: py, ox: state.preview.offsetX, oy: state.preview.offsetY };
       wrap.setPointerCapture(e.pointerId);
       e.preventDefault();
+    } else if (e.button === 0) {
+      const [cx, cy] = pointerToWrapCoords(e);
+      const box = getActiveCrop();
+      if (!box) return;
+      const hit = cropHandleUnder(cx, cy, box);
+      if (!hit) return;
+      const [ix, iy] = canvasToImg(cx, cy);
+      state.cropDrag = { handle: hit, startBox: box.slice(), startImg: [ix, iy] };
+      commitManualCrop(box);  // seed manual_crop from the current (auto or manual) box
+      wrap.setPointerCapture(e.pointerId);
+      e.preventDefault();
+      e.stopPropagation();
+      draw();
     }
   });
 
   wrap.addEventListener("pointerup", (e) => {
     state.preview.panStart = null;
+    state.cropDrag = null;
     try { wrap.releasePointerCapture(e.pointerId); } catch {}
   });
+
+  cropReset.addEventListener("click", (e) => { e.stopPropagation(); resetCropToAuto(); });
+  trapPointerEvents(cropReset);
 
   wrap.addEventListener("wheel", (e) => {
     e.preventDefault();
@@ -778,7 +888,7 @@ app.registerExtension({
           refs[`margin_${spec.key}`] = getWidget(this, `margin_${spec.key}`);
           if (spec.paired) refs[`side_${spec.key}`] = getWidget(this, `side_${spec.key}`);
         }
-        ["device","confidence_threshold","framing_mode","expand_fill_mode","expand_fill_color","preferred_gender","target_age_min","target_age_max","detect_only"].forEach((k) => {
+        ["device","confidence_threshold","framing_mode","expand_fill_mode","expand_fill_color","mask_feather","crop_mode","manual_crop","preferred_gender","target_age_min","target_age_max","detect_only"].forEach((k) => {
           refs[k] = getWidget(this, k);
         });
         if (refs.detect_only) setWidgetValue(this, refs.detect_only, false);
@@ -794,6 +904,10 @@ app.registerExtension({
           controlsRoot: null,
           panelHeight: DEFAULT_PANEL_HEIGHT,
           refs,
+          node: this,
+          widthWidget: getWidget(this, "width"),
+          heightWidget: getWidget(this, "height"),
+          cropDrag: null,
         };
         this.__essRecropState = state;
 

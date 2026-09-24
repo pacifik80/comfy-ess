@@ -131,12 +131,21 @@ class ESSFluxInpaint:
                     "default": False,
                     "tooltip": "Print the summary string to the console.",
                 }),
+                # Appended last on purpose: inserting mid-list shifts every later
+                # widget's stored value on existing nodes.
+                "masked_content": ((("gray", "noise", "original")), {
+                    "default": "gray",
+                    "tooltip": "What to put in the masked area BEFORE VAE-encoding the inpaint target. "
+                               "'gray'/'noise' erase the original so the model actually regenerates the "
+                               "region (recommended). 'original' keeps it, which only changes the region "
+                               "at denoise=1.0 and otherwise reconstructs what was already there.",
+                }),
             },
         }
 
     def prepare(self, conditioning, vae, image, mask,
                 use_as_reference, reference_scale, reference_method, max_target_pixels,
-                mask_grow, mask_blur, debug_log):
+                mask_grow, mask_blur, debug_log, masked_content="gray"):
 
         # Normalize and align the mask to image dimensions.
         src_h = int(image.shape[1])
@@ -147,8 +156,20 @@ class ESSFluxInpaint:
         m = _grow_mask(m, int(mask_grow))
         m = _blur_mask(m, float(mask_blur))
 
-        # Encode the full-resolution image for the inpaint latent target.
-        full_latent = vae.encode(image)
+        # Optionally erase the masked region before encoding so the model has no
+        # original content to reconstruct (mirrors VAEEncodeForInpaint). Done after
+        # grow/blur so the same editable region is what gets erased.
+        image_for_encode = image
+        if masked_content != "original":
+            m3 = m.reshape(m.shape[0], m.shape[1], m.shape[2], 1)
+            if masked_content == "noise":
+                fill = torch.rand_like(image)
+            else:  # "gray"
+                fill = torch.full_like(image, 0.5)
+            image_for_encode = image * (1.0 - m3) + fill * m3
+
+        # Encode the (optionally erased) image for the inpaint latent target.
+        full_latent = vae.encode(image_for_encode)
 
         # Comfy stores noise_mask at image resolution (B, 1, H, W); the sampler
         # downsamples it internally to latent resolution.
@@ -175,7 +196,7 @@ class ESSFluxInpaint:
 
         mask_coverage = float(m.mean().item())
         summary = (
-            f"inpaint · src={src_w}×{src_h} · "
+            f"inpaint · src={src_w}×{src_h} · masked={masked_content} · "
             f"mask coverage={mask_coverage * 100:.1f}% "
             f"(grow={mask_grow}, blur={mask_blur:.1f}) · {ref_summary}"
         )
