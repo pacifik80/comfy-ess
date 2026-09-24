@@ -1,51 +1,49 @@
-# comfy-ess
+# comfyui-ess
 
-Custom ComfyUI nodes for ESS prompt tooling, including a template editor with syntax highlighting and utility image/pose nodes.
+Clean starting point for a complete rewrite of the ESS ComfyUI extension.
+The `rewrite` branch currently contains only an empty ComfyUI entry point and
+repository housekeeping. No nodes or frontend extensions are registered yet.
 
-## Features
-- Prompt template editor with scope-aware highlighting
-- Optional template parsing with deterministic seed
-- Utility nodes for image adjustment, pose generation, and optional face workflows
+## Previous implementation
 
-**Nodes**
-All nodes appear under `ESS/*` categories in the ComfyUI add menu.
+The complete implementation immediately before the rewrite is preserved at:
 
-**Prompt Builder**
-- `ESS - Prompt Template Editor`: rich template editor; optionally parses with seed and supports prefix/suffix positive/negative inputs.
-- `ESS - Prompt Template Editor - Multioutput`: outputs up to 10 positive/negative pairs using `<< >>` variant blocks (a-j), with labels like `a:` or comma-separated `a,b,c:`.
-- `ESS - Scene Flow Editor`: visual sectioned flow editor with `element`/`sequential`/`random`/`output` nodes, weighted random links, and single-scene generation output.
-- `ESS - Text Prompt Generator`: parses positive/negative templates into final prompts (inverse parts cross-fed).
-- `ESS - Text Prompt Replacer`: replaces `%replace_a%`, `%replace_b%`, `%replace_c%` placeholders in a prompt.
-- `ESS - Replace Dict`: creates or extends a replacement dictionary (key/value pairs).
+- Snapshot commit: `e7111aa4aa0d6c66d3e2afca4a92235062b44198`
+- Tag: [`pre-rewrite-2026-09-25`](https://github.com/pacifik80/comfy-ess/tree/pre-rewrite-2026-09-25)
+- Archive branch: `archive/pre-rewrite-2026-09-25`
+- `master` also points to this snapshot at the start of the rewrite.
 
-**Image**
-- `ESS - Image Adjustments`: per-channel RGB, brightness, and saturation adjustments on `IMAGE`.
-- `ESS - Segmentation Detailer`: segmentation-guided detail pass using a mask or SAM model; outputs `IMAGE` and `LATENT`.
-- `ESS - Person Crop To Size`: detects a person/head with Ultralytics YOLO and crops to the target size; outputs a debug overlay.
-- `ESS - Image Library Provider`: stores one or more images directly inside the workflow, outputs the chosen `IMAGE`, its width/height, and an optional per-image prompt; supports manual selection or weighted random mode.
+The snapshot includes the previously uncommitted Flux Fill, Flux Inpaint, and
+Recrop changes. Earlier implementations, including removed crop nodes, remain
+available in Git history. The rewrite retains that history.
 
-**Detailer**
-- `ESS - Face Detailer (ESS)`: Impact Pack face detailer clone; detects a face and refines via masked inpainting.
+Read an archived file without switching branches:
 
-**Pose**
-- `ESS - Pose Mesh Editor`: interactive multi-character rig pose editor with 3 camera slots; outputs 3 OpenPose images.
+```sh
+git show pre-rewrite-2026-09-25:nodes/image/recrop.py
+```
 
-**Face Swapping**
-- `ESS - Face Swap (InSwapper)`: InsightFace InSwapper ONNX; optional mask blending and GFPGAN restoration.
-- `ESS - Face Swap (SimSwap)`: SimSwap ONNX with optional GFPGAN restoration and mask blending.
-- `ESS - Face Swap (FaceFusion)`: HyperSwap/Ghost/BlendSwap/HiFiFace/UniFace ONNX models; outputs swapped image.
+Find older versions of a removed file:
 
-**Utils**
-- `ESS - Prefix Generator`: creates project/version/run prefixes and resolves seeds (fixed/random/increment/decrement).
-- `ESS - Group Reroute`: dynamic passthrough (up to 16 inputs/outputs).
-- `ESS - String Concatenate`: concatenates multiple strings with separator/newline options and whitespace cleanup.
-- `ESS - Label Note`: canvas-only label node (no outputs).
+```sh
+git log --all -- nodes/image/composition_crop.py
+```
 
-**Optional Dependencies**
-- Face swapping nodes require `insightface`, `onnxruntime`, and `opencv-python` (plus optional `gfpgan` for restoration).
-- `ESS - Face Detailer (ESS)` requires ComfyUI-Impact-Pack and InsightFace.
-- `ESS - Segmentation Detailer` requires the ComfyUI runtime and optionally SAM models.
-- `ESS - Person Crop To Size` requires `ultralytics` and YOLO model weights.
+## Local reference checkout
 
-## Install
-Copy this folder into `ComfyUI/custom_nodes/` and restart ComfyUI.
+On the original development machine, a linked Git worktree is available at:
+
+```text
+C:\AIApps\Data\ess-archive\comfyui-ess-pre-rewrite-2026-09-25
+```
+
+It contains the old source together with the local `models/`, `.cache_src/`, and
+other ignored caches moved out of the rewrite workspace. Those local assets are
+not uploaded to GitHub. The archive is outside `custom_nodes`, so ComfyUI does
+not automatically load a second copy of the extension.
+
+On another machine, create a reference checkout outside `custom_nodes`:
+
+```sh
+git worktree add /path/outside/custom_nodes/comfyui-ess-reference archive/pre-rewrite-2026-09-25
+```
